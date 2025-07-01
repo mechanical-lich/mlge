@@ -4,9 +4,9 @@ import (
 	"image"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/mechanical-lich/game-engine/config"
-	"github.com/mechanical-lich/game-engine/resource"
-	"github.com/mechanical-lich/game-engine/state"
+	"github.com/mechanical-lich/mlge/config"
+	"github.com/mechanical-lich/mlge/resource"
+	"github.com/mechanical-lich/mlge/state"
 )
 
 // GUI Main struct that manages the gui for the game. Includes the cursor

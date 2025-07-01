@@ -2,25 +2,26 @@ package ecs
 
 // SystemInterface - interface that represents a system, world is an interface and should be cast to whatever data
 // structure the game is currently using or that the system cares about.
-type SystemV2Interface interface {
+type SystemInterface interface {
 	UpdateSystem(data interface{}) error
 	UpdateEntity(data interface{}, entity *Entity) error
+	Requires() []ComponentType
 }
 
 // SystemManager - contains a list of systems and is responsible for calling their update functions on entities.
-type SystemV2Manager struct {
-	systems []SystemV2Interface
+type SystemManager struct {
+	systems []SystemInterface
 }
 
-func (s *SystemV2Manager) AddSystem(system SystemV2Interface) {
+func (s *SystemManager) AddSystem(system SystemInterface) {
 	if s.systems == nil {
-		s.systems = make([]SystemV2Interface, 0)
+		s.systems = make([]SystemInterface, 0)
 	}
 
 	s.systems = append(s.systems, system)
 }
 
-func (s *SystemV2Manager) UpdateSystems(world interface{}) error {
+func (s *SystemManager) UpdateSystems(world interface{}) error {
 	for system := range s.systems {
 		err := s.systems[system].UpdateSystem(world)
 		if err != nil {
@@ -31,11 +32,13 @@ func (s *SystemV2Manager) UpdateSystems(world interface{}) error {
 }
 
 // UpdateSystemsForEntity - Iterates through the systems for the specific entity
-func (s *SystemV2Manager) UpdateSystemsForEntity(world interface{}, entity *Entity) error {
+func (s *SystemManager) UpdateSystemsForEntity(world interface{}, entity *Entity) error {
 	for system := range s.systems {
-		err := s.systems[system].UpdateEntity(world, entity)
-		if err != nil {
-			return err
+		if entity.HasComponents(s.systems[system].Requires()...) {
+			err := s.systems[system].UpdateEntity(world, entity)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

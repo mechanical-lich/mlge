@@ -2,7 +2,7 @@ package ui
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/mechanical-lich/game-engine/state"
+	"github.com/mechanical-lich/mlge/state"
 )
 
 // Base GUIView interface.

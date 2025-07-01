@@ -1,0 +1,58 @@
+package ecs
+
+// Entity - represents an entity which essentially is an array of components built from a blueprint.
+type Entity struct {
+	Components map[ComponentType]Component
+	Blueprint  string
+}
+
+// AddComponent - Adds the provided component to the entity.
+func (entity *Entity) AddComponent(c Component) {
+	if entity.Components == nil {
+		entity.Components = make(map[ComponentType]Component)
+	}
+
+	entity.Components[c.GetType()] = c
+}
+
+// HasComponent - Returns if the entity has the
+func (entity *Entity) HasComponent(name ComponentType) bool {
+	if entity.Components == nil {
+		entity.Components = make(map[ComponentType]Component)
+	}
+
+	return entity.Components[name] != nil
+}
+
+// HasComponents - takes a comma separated string of component names and returns if entity has all of them.
+func (entity *Entity) HasComponents(names ...ComponentType) bool {
+	if entity.Components == nil {
+		entity.Components = make(map[ComponentType]Component)
+	}
+
+	for _, name := range names {
+		if entity.Components[name] == nil {
+			return false
+		}
+	}
+
+	return true
+}
+
+// GetComponent - Gets the component as a component interface.
+func (entity *Entity) GetComponent(name ComponentType) Component {
+	if entity.Components == nil {
+		entity.Components = make(map[ComponentType]Component)
+	}
+
+	return entity.Components[name]
+}
+
+// RemoveComponent - Removes the component from the entity.
+func (entity *Entity) RemoveComponent(name ComponentType) {
+	if entity.Components == nil {
+		entity.Components = make(map[ComponentType]Component)
+	}
+
+	entity.Components[name] = nil
+}

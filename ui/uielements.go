@@ -6,8 +6,8 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text"
-	"github.com/mechanical-lich/game-engine/config"
-	"github.com/mechanical-lich/game-engine/resource"
+	"github.com/mechanical-lich/mlge/config"
+	"github.com/mechanical-lich/mlge/resource"
 )
 
 type Button struct {

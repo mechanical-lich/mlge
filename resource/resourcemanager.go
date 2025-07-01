@@ -9,8 +9,8 @@ import (
 	"github.com/go-fonts/liberation/liberationsansregular"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"github.com/mechanical-lich/game-engine/audio"
-	"github.com/mechanical-lich/game-engine/config"
+	"github.com/mechanical-lich/mlge/audio"
+	"github.com/mechanical-lich/mlge/config"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
 )

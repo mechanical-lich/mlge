@@ -5,8 +5,8 @@ import (
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/mechanical-lich/game-engine/audio"
-	"github.com/mechanical-lich/game-engine/event"
+	"github.com/mechanical-lich/mlge/audio"
+	"github.com/mechanical-lich/mlge/event"
 )
 
 const (
