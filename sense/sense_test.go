@@ -3,6 +3,8 @@ package sense
 import (
 	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const TestWidth = 10
@@ -11,20 +13,10 @@ const TestHeight = 10
 func TestNewSenseScapeCreatesAValidSoundScape(t *testing.T) {
 	s := NewSenseScape(TestWidth, TestHeight)
 
-	if s.width != TestWidth {
-		t.Errorf("Sensescape width %d not equal to expected %d", s.width, TestWidth)
-	}
-
-	if s.height != TestHeight {
-		t.Errorf("Sensescape height %d not equal to expected %d", s.height, TestHeight)
-	}
-
-	if len(s.data) != TestWidth {
-		t.Errorf("Sensescape data width %d not equal to expected %d", len(s.data), TestWidth)
-	}
-	if len(s.data[0]) != TestHeight {
-		t.Errorf("Sensescape data height %d not equal to expected %d", len(s.data[0]), TestHeight)
-	}
+	assert.Equal(t, TestWidth, s.width)
+	assert.Equal(t, TestHeight, s.height)
+	assert.Len(t, s.data, TestWidth)
+	assert.Len(t, s.data[0], TestHeight)
 }
 
 func TestGetStimuliAtWithNothingThere(t *testing.T) {
@@ -32,53 +24,31 @@ func TestGetStimuliAtWithNothingThere(t *testing.T) {
 
 	stimuli, _ := s.GetStimuliAt(0, 0)
 
-	if stimuli != nil {
-		t.Errorf("Stimuli did not come back nil")
-	}
+	assert.Nil(t, stimuli)
 }
-
 func TestGetStimuliAtOutOfBounds(t *testing.T) {
 	s := NewSenseScape(TestWidth, TestHeight)
 
 	_, err := s.GetStimuliAt(TestWidth+1, 0)
 
-	if err == nil {
-		t.Errorf("Get stimuli at did not error with out of bounds")
-	}
+	assert.NotNil(t, err)
 }
-
 func TestAddStimulus(t *testing.T) {
 	s := NewSenseScape(TestWidth, TestHeight)
 	//Test applying a brand new stimulus
 	err := s.ApplyStimulus(0, 0, Stimulus{Type: SoundStimuli, Intensity: 1})
-	if err != nil {
-		t.Errorf("Got error applying stimulus: %s", err)
-	}
+	assert.Nil(t, err)
 	stimuli, _ := s.GetStimuliAt(0, 0)
-
-	if stimuli == nil {
-		t.Errorf("Stimuli came back nil")
-	}
-
-	if stimuli[0].Intensity != 1 {
-		t.Errorf("Stimuli intensity %d not equal to expected %d", stimuli[0].Intensity, 1)
-	}
+	assert.NotNil(t, stimuli)
+	assert.Equal(t, 1, stimuli[0].Intensity)
 
 	//Test applying the same stimulus again
 	err = s.ApplyStimulus(0, 0, Stimulus{Type: SoundStimuli, Intensity: 1})
-	if err != nil {
-		t.Errorf("Got error applying stimulus the second time: %s", err)
-	}
-
+	assert.Nil(t, err)
 	stimuli, _ = s.GetStimuliAt(0, 0)
-	if stimuli == nil {
-		t.Errorf("Stimuli came back nil")
-	}
-	if stimuli[0].Intensity != 2 {
-		t.Errorf("Stimuli intensity %d not equal to expected %d", stimuli[0].Intensity, 2)
-	}
+	assert.NotNil(t, stimuli)
+	assert.Equal(t, 2, stimuli[0].Intensity)
 }
-
 func TestMakeSound(t *testing.T) {
 	s := NewSenseScape(TestWidth, TestHeight)
 	//Test applying a brand new stimulus
@@ -97,101 +67,52 @@ func TestMakeSound(t *testing.T) {
 
 	stimuli, _ := s.GetStimuliAt(5, 5)
 
-	if stimuli == nil {
-		t.Errorf("Stimuli came back nil")
-	}
-
-	if stimuli[0].Intensity != 5 {
-		t.Errorf("Stimuli intensity %d not equal to expected %d", stimuli[0].Intensity, 5)
-	}
-
+	assert.NotNil(t, stimuli)
+	assert.Equal(t, 5, stimuli[0].Intensity)
 	stimuli, _ = s.GetStimuliAt(4, 4)
-	if stimuli == nil {
-		t.Errorf("Stimuli came back nil")
-	}
-	if stimuli[0].Intensity != 5 {
-		t.Errorf("Stimuli intensity %d not equal to expected %d", stimuli[0].Intensity, 5)
-	}
+	assert.NotNil(t, stimuli)
+	assert.Equal(t, 5, stimuli[0].Intensity)
 }
-
 func TestAddStimulusOutOfBounds(t *testing.T) {
 	s := NewSenseScape(TestWidth, TestHeight)
 
 	err := s.ApplyStimulus(TestWidth+1, 0, Stimulus{Type: SoundStimuli, Intensity: 1})
 
-	if err == nil {
-		t.Errorf("Get stimuli at did not error with out of bounds")
-	}
+	assert.NotNil(t, err)
 }
-
 func TestUpdateDoesNotError(t *testing.T) {
 	s := NewSenseScape(TestWidth, TestHeight)
 	err := s.Update()
 
-	if err != nil {
-		t.Errorf("SenseScape update errored: %s", err)
-	}
+	assert.Nil(t, err)
 }
-
 func TestUpdateDispersesScentCorrectly(t *testing.T) {
 	s := NewSenseScape(TestWidth, TestHeight)
 
 	err := s.ApplyStimulus(0, 0, Stimulus{Type: ScentStimuli, Intensity: 4, Decay: 1})
-	if err != nil {
-		t.Errorf("Got error applying stimulus during update test: %s", err)
-	}
-
+	assert.Nil(t, err)
 	err = s.Update()
-
-	if err != nil {
-		t.Errorf("SenseScape update errored: %s", err)
-	}
+	assert.Nil(t, err)
 
 	stimuli, _ := s.GetStimuliAt(0, 0)
-	if stimuli == nil {
-		t.Errorf("Stimuli came back nil")
-	}
-	if stimuli[0].Intensity != 3 {
-		t.Errorf("Stimuli intensity %d not equal to expected %d", stimuli[0].Intensity, 3)
-	}
-
+	assert.NotNil(t, stimuli)
+	assert.Equal(t, 3, stimuli[0].Intensity)
 	stimuli, _ = s.GetStimuliAt(1, 0)
-	if stimuli == nil {
-		t.Errorf("Stimuli 2 came back nil")
-	}
-	if stimuli[0].Intensity != 2 {
-		t.Errorf("Stimuli 2 intensity %d not equal to expected %d", stimuli[0].Intensity, 2)
-	}
-
+	assert.NotNil(t, stimuli)
+	assert.Equal(t, 2, stimuli[0].Intensity)
 	stimuli, _ = s.GetStimuliAt(2, 0)
-	if stimuli == nil {
-		t.Errorf("Stimuli 3 came back nil")
-	}
-	if stimuli[0].Intensity != 1 {
-		t.Errorf("Stimuli 3 intensity %d not equal to expected %d", stimuli[0].Intensity, 1)
-	}
-
+	assert.NotNil(t, stimuli)
+	assert.Equal(t, 1, stimuli[0].Intensity)
 }
-
 func TestUpdateDecaysPheremones(t *testing.T) {
 	s := NewSenseScape(TestWidth, TestHeight)
 
 	err := s.ApplyStimulus(0, 0, Stimulus{Type: PheremoneStimuli, Intensity: 5, Decay: 1})
-	if err != nil {
-		t.Errorf("Got error applying stimulus during update test: %s", err)
-	}
-
+	assert.Nil(t, err)
 	err = s.Update()
-
-	if err != nil {
-		t.Errorf("SenseScape update errored: %s", err)
-	}
+	assert.Nil(t, err)
 
 	stimuli, _ := s.GetStimuliAt(0, 0)
-	if stimuli == nil {
-		t.Errorf("Stimuli came back nil")
-	}
-	if stimuli[0].Intensity != 4 {
-		t.Errorf("Stimuli intensity %d not equal to expected %d", stimuli[0].Intensity, 4)
-	}
+	assert.NotNil(t, stimuli)
+	assert.Equal(t, 4, stimuli[0].Intensity)
 }

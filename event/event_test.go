@@ -3,6 +3,8 @@ package event
 import (
 	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -30,39 +32,25 @@ func TestRegisterListener(t *testing.T) {
 	testListener := &TestListener{}
 
 	m.RegisterListener(testListener, Test)
-	if len(m.listeners[Test]) != 1 {
-		t.Errorf("Output %q not equal to expected %q", len(m.listeners[Test]), 1)
-	}
+	assert.Equal(t, 1, len(m.listeners[Test]))
 }
-
 func TestUnregisterListener(t *testing.T) {
 	m := &QueuedEventManager{}
 
 	testListener := &TestListener{}
 
 	m.RegisterListener(testListener, Test)
-	if len(m.listeners[Test]) != 1 {
-		t.Errorf("Output %q not equal to expected %q", len(m.listeners[Test]), 1)
-	}
-
+	assert.Equal(t, 1, len(m.listeners[Test]))
 	m.UnregisterListener(testListener, Test)
-	if len(m.listeners[Test]) != 0 {
-		t.Errorf("Output %q not equal to expected %q", len(m.listeners[Test]), 0)
-	}
+	assert.Equal(t, 0, len(m.listeners[Test]))
 }
-
 func TestUnregisterListenerFromAll(t *testing.T) {
 	m := &QueuedEventManager{}
 
 	testListener := &TestListener{}
 
 	m.RegisterListener(testListener, Test)
-	if len(m.listeners[Test]) != 1 {
-		t.Errorf("Output %q not equal to expected %q", len(m.listeners[Test]), 1)
-	}
-
+	assert.Equal(t, 1, len(m.listeners[Test]))
 	m.UnregisterListenerFromAll(testListener)
-	if len(m.listeners[Test]) != 0 {
-		t.Errorf("Output %q not equal to expected %q", len(m.listeners[Test]), 0)
-	}
+	assert.Equal(t, 0, len(m.listeners[Test]))
 }

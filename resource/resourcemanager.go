@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"image"
 	"log"
+	"os"
 
 	"github.com/go-fonts/liberation/liberationsansregular"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/mechanical-lich/mlge/audio"
 	"github.com/mechanical-lich/mlge/config"
 	"golang.org/x/image/font"
@@ -36,7 +36,7 @@ func LoadImageAsTexture(name string, path string) error {
 
 // LoadImage - Loads an image from the specified path and returns it as an ebiten.Image
 func LoadImage(path string) (*ebiten.Image, error) {
-	imgFile, err := ebitenutil.OpenFile(path)
+	imgFile, err := os.Open(path)
 	if err != nil {
 		fmt.Println("Error opening tileset " + path)
 		return nil, errors.New("error opening tileset " + path)
@@ -53,7 +53,7 @@ func LoadImage(path string) (*ebiten.Image, error) {
 // LoadFont - Loads a font into the font map with the given name and path.
 func LoadFont(name string, path string) error {
 	if Fonts == nil {
-		log.Print("Initialize resource manager")
+		log.Print("Initialize fonts")
 		Fonts = make(map[string]font.Face)
 	}
 	raw := liberationsansregular.TTF

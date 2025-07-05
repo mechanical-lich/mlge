@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/stretchr/testify/assert"
 )
 
 type TestState struct {
@@ -39,9 +40,7 @@ func TestStateUpdates(t *testing.T) {
 
 	sm.Update()
 
-	if s.Value != "Updated" {
-		t.Errorf("Failed to updated state")
-	}
+	assert.Equal(t, "Updated", s.Value, "Failed to updated state")
 }
 
 func TestStateDraw(t *testing.T) {
@@ -52,11 +51,8 @@ func TestStateDraw(t *testing.T) {
 
 	sm.Draw(&ebiten.Image{})
 
-	if s.Value != "Drawn" {
-		t.Errorf("Failed to draw state")
-	}
+	assert.Equal(t, "Drawn", s.Value, "Failed to draw state")
 }
-
 func TestStatePopsWhenDone(t *testing.T) {
 	sm := StateMachine{}
 
@@ -69,11 +65,8 @@ func TestStatePopsWhenDone(t *testing.T) {
 
 	sm.Update()
 
-	if len(sm.states) > 0 {
-		t.Errorf("Failed to pop finished state")
-	}
+	assert.Empty(t, sm.states, "Failed to pop finished state")
 }
-
 func TestStatePushesNewState(t *testing.T) {
 	sm := StateMachine{}
 
@@ -92,20 +85,9 @@ func TestStatePushesNewState(t *testing.T) {
 
 	sm.Update()
 
-	if len(sm.states) < 2 {
-		t.Errorf("Failed to push new state")
-	}
-
-	if sm.states[sm.currentState] != s2 {
-		t.Error("Current state is not the most recently pushed state")
-	}
-
-	if s2.Value != "" {
-		t.Error("State data updated before update called")
-	}
-
+	assert.Len(t, sm.states, 2, "Failed to push new state")
+	assert.Equal(t, sm.states[sm.currentState], s2, "Current state is not the most recently pushed state")
+	assert.Empty(t, s2.Value, "State data updated before update called")
 	sm.Update()
-	if s2.Value != "Updated" {
-		t.Error("Failed to update state 2 data")
-	}
+	assert.Equal(t, "Updated", s2.Value, "Failed to update state 2 data")
 }
