@@ -100,12 +100,31 @@ func (m *QueuedEventManager) HandleQueue() {
 		m.eventQueue = make([]EventData, 0)
 		return
 	}
-
-	//We don't want to handle new events generated while handling these events or we'll get an endless loop.
+	// We don't want to handle new events generated while handling these events or we'll get an endless loop.
 	c := len(m.eventQueue)
 	for len(m.eventQueue) > 0 && c > 0 {
 		m.SendEvent(m.eventQueue[0])
 		m.eventQueue = m.eventQueue[1:]
 		c--
 	}
+}
+
+// Singleton instance
+var queuedEventSingleton *QueuedEventManager
+var eventSingleton *EventManager
+
+// GetInstance - Returns the singleton instance of EventManager
+func GetInstance() *EventManager {
+	if eventSingleton == nil {
+		eventSingleton = &EventManager{}
+	}
+	return eventSingleton
+}
+
+// GetInstance - Returns the singleton instance of QueuedEventManager
+func GetQueuedInstance() *QueuedEventManager {
+	if queuedEventSingleton == nil {
+		queuedEventSingleton = &QueuedEventManager{}
+	}
+	return queuedEventSingleton
 }

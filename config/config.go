@@ -1,15 +1,15 @@
 package config
 
-//TileSizeW width of the tile when rendered
+// TileSizeW width of the tile when rendered
 const TileSizeW = 32
 
-//TileSizeH height of the tile when rendered
+// TileSizeH height of the tile when rendered
 const TileSizeH = 32
 
-//SpriteSizeH Height of the sprite in the tileset.
+// SpriteSizeH Height of the sprite in the tileset.
 const SpriteSizeH = 16
 
-//SpriteSizeW Width of the sprite in the tileset.
+// SpriteSizeW Width of the sprite in the tileset.
 const SpriteSizeW = 16
 
 const World_W = 640

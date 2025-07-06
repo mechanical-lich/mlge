@@ -1,0 +1,8 @@
+name: Go Game Dev Docs
+version: 0.0.1
+schema: v1
+docs:
+  - name: Ebiten
+    startUrl: https://pkg.go.dev/github.com/hajimehoshi/ebiten/v2
+  - name: Go
+    startUrl: https://go.dev/doc/
