@@ -1,0 +1,121 @@
+package task
+
+import (
+	"log"
+	"slices"
+	"sort"
+	"time"
+)
+
+type TaskAction string
+
+// Default Task actions
+const PickupAction TaskAction = "pickup"                  // Pickup item at tile
+const ScoutAction TaskAction = "scout"                    // Non-aggressive move to location
+const AggressiveMoveAction TaskAction = "aggressive_move" // Move to location but attack things in sight along the way
+const AttackAction TaskAction = "attack"                  // Attack whatever is in square if possible (moves to it)
+const BuildAction TaskAction = "build"                    // Build at tile
+const DigAction TaskAction = "dig"                        // Digs up a tile if possible.
+
+type Task struct {
+	X          int
+	Y          int
+	Action     TaskAction
+	Data       any
+	Escalated  bool
+	Completed  bool
+	InProgress bool
+	Created    time.Time
+}
+
+// Mark a task as in progress
+func (t *Task) Start() {
+	t.InProgress = true
+}
+
+// If a task can't be completed call Stop to put it back in the queue
+func (t *Task) Stop() {
+	t.InProgress = false
+	t.Escalated = false
+	t.Created = time.Now()
+}
+
+// Mark a task as complete.  Completed tasks get automatically cleaned up.
+func (t *Task) Complete() {
+	log.Printf("Task to %s completed at %s at [%d,%d]", t.Action, t.Created.String(), t.X, t.Y)
+	t.Completed = true
+}
+
+/*
+The task scheduler's job is to store all current tasks and give out tasks based on
+priority and age.
+
+Tasks that get started then stopped get put on the bottom of the queue.
+Tasks that are completed get cleaned up automatically.
+*/
+type TaskScheduler struct {
+	tasks []*Task
+}
+
+// Add a new task
+func (ts *TaskScheduler) AddTask(task *Task) {
+	ts.tasks = append(ts.tasks, task)
+}
+
+// Get all tasks
+func (ts *TaskScheduler) GetTasks() []*Task {
+	return ts.tasks
+}
+
+// Removes a task from the queue
+func (ts *TaskScheduler) RemoveTask(task *Task) {
+	for i, t := range ts.tasks {
+		if t == task {
+			ts.tasks = append(ts.tasks[:i], ts.tasks[i+1:]...)
+			break
+		}
+	}
+}
+
+// Removes all currently scheduled tasks
+func (ts *TaskScheduler) ClearTasks() {
+	ts.tasks = []*Task{}
+}
+
+// Sort tasks by creation date by prioritize escalated tasks.
+func (ts *TaskScheduler) SortTasks() {
+	sort.Slice(ts.tasks, func(i, j int) bool {
+		if ts.tasks[i].Escalated != ts.tasks[j].Escalated {
+			return ts.tasks[i].Escalated
+		}
+		return ts.tasks[i].Created.Before(ts.tasks[j].Created)
+	})
+
+	// Clean up the completed tasks
+	for i := len(ts.tasks) - 1; i >= 0; i-- {
+		if ts.tasks[i].Completed {
+			ts.tasks = append(ts.tasks[:i], ts.tasks[i+1:]...)
+		}
+	}
+}
+
+// Get the next task.   If allowed list is empty any task is picked.
+// The task will be marked as "started" before it is returned.  It is up to the caller to mark it as completed
+// or to stop it if it can't be completed.
+func (ts *TaskScheduler) GetNextTask(allowed_tasks []TaskAction) *Task {
+	ts.SortTasks()
+	if len(ts.tasks) == 0 {
+		return nil
+	}
+
+	for i := 0; i < len(ts.tasks); i++ {
+		task := ts.tasks[i]
+
+		if (len(allowed_tasks) == 0 || slices.Contains(allowed_tasks, task.Action)) && !task.Completed && !ts.tasks[i].InProgress {
+			task.Start()
+			return task
+		}
+	}
+
+	return nil
+}
