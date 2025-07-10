@@ -5,9 +5,9 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/text"
 	"github.com/mechanical-lich/mlge/config"
 	"github.com/mechanical-lich/mlge/resource"
+	"github.com/mechanical-lich/mlge/text/v2"
 )
 
 type Button struct {
@@ -20,13 +20,15 @@ type Button struct {
 	IconY  int
 }
 
-func NewButton(x int, y int, text string) *Button {
+func NewButton(x int, y int, txt string) *Button {
+	w, h := text.Measure(txt, 16)
+
 	b := &Button{
 		X:      x,
 		Y:      y,
-		Width:  64,
-		Height: 32,
-		Text:   text,
+		Width:  int(w + 10),
+		Height: int(h + 10),
+		Text:   txt,
 	}
 
 	return b
@@ -34,7 +36,7 @@ func NewButton(x int, y int, text string) *Button {
 
 func (b Button) Draw(screen *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Scale(2, 2)
+	op.GeoM.Scale(float64(b.Width)/32.0, float64(b.Height)/16.0)
 	op.GeoM.Translate(float64(b.X), float64(b.Y))
 	sX := 16
 	sY := 64
@@ -44,7 +46,7 @@ func (b Button) Draw(screen *ebiten.Image) {
 	}
 	//s.drawSpriteEx(int32(x), int32(y), sX, sY, 32, 32, 255, 255, 255, 255, s.uiTexture)
 	screen.DrawImage(resource.Textures["ui"].SubImage(image.Rect(sX, sY, sX+config.SpriteSizeW*2, sY+config.SpriteSizeH)).(*ebiten.Image), op)
-	text.Draw(screen, b.Text, resource.Fonts["main"], b.X, b.Y+20, color.White)
+	text.Draw(screen, b.Text, 15, b.X+5, b.Y+5, color.White)
 }
 
 func (b *Button) IsWithin(cX int, cY int) bool {
