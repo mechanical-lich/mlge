@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"image"
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -14,6 +13,9 @@ type RadioButton struct {
 	X, Y          int
 	Width, Height int
 	Label         string
+	IconX         int
+	IconY         int
+	IconResource  string
 }
 
 type RadioGroup struct {
@@ -45,6 +47,23 @@ func NewRadioButton(x, y int, label string) RadioButton {
 	}
 }
 
+func NewIconRadioButton(x int, y, iconX, iconY int, iconResource string, label string) *RadioButton {
+	w, h := text.Measure(label, 16)
+
+	b := &RadioButton{
+		X:            x,
+		Y:            y,
+		IconX:        iconX,
+		IconY:        iconY,
+		IconResource: iconResource,
+		Width:        int(w + 10 + 16),
+		Height:       int(h + 16),
+		Label:        label,
+	}
+
+	return b
+}
+
 func (rg *RadioGroup) Update() {
 	for i, button := range rg.Buttons {
 		if button.IsClicked() {
@@ -72,9 +91,20 @@ func (rb *RadioButton) Draw(screen *ebiten.Image, selected bool) {
 		sX += 32
 	}
 
-	screen.DrawImage(resource.Textures["ui"].SubImage(image.Rect(sX, sY, sX+config.SpriteSizeW*2, sY+config.SpriteSizeH)).(*ebiten.Image), op)
+	screen.DrawImage(resource.GetSubImage(resource.Textures["ui"], sX, sY, config.SpriteSizeW*2, config.SpriteSizeH), op)
+	if rb.IconResource != "" {
+		text.Draw(screen, rb.Label, 15, rb.X+5+16, rb.Y+5, color.White)
 
-	text.Draw(screen, rb.Label, 15, rb.X+5, rb.Y+5, color.White)
+		iconImage := resource.Textures[rb.IconResource]
+		if iconImage != nil {
+			iconOp := &ebiten.DrawImageOptions{}
+			iconOp.GeoM.Scale(1.0, 1.0)
+			iconOp.GeoM.Translate(float64(rb.X+5), float64(rb.Y+5))
+			screen.DrawImage(resource.GetSubImage(iconImage, rb.IconX, rb.IconY, config.SpriteSizeW, config.SpriteSizeH), iconOp)
+		}
+	} else {
+		text.Draw(screen, rb.Label, 15, rb.X+5, rb.Y+5, color.White)
+	}
 }
 
 func (b *RadioButton) IsWithin(cX int, cY int) bool {
