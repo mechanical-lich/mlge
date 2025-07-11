@@ -103,6 +103,16 @@ func (ts *TaskScheduler) SortTasks() {
 // The task will be marked as "started" before it is returned.  It is up to the caller to mark it as completed
 // or to stop it if it can't be completed.
 func (ts *TaskScheduler) GetNextTask(allowed_tasks []TaskAction) *Task {
+	t := ts.PeekNextTask(allowed_tasks)
+	if t != nil {
+		t.Start()
+	}
+
+	return t
+}
+
+// PeekNextTask returns the next task without marking it as started.
+func (ts *TaskScheduler) PeekNextTask(allowed_tasks []TaskAction) *Task {
 	ts.SortTasks()
 	if len(ts.tasks) == 0 {
 		return nil
@@ -112,7 +122,6 @@ func (ts *TaskScheduler) GetNextTask(allowed_tasks []TaskAction) *Task {
 		task := ts.tasks[i]
 
 		if (len(allowed_tasks) == 0 || slices.Contains(allowed_tasks, task.Action)) && !task.Completed && !ts.tasks[i].InProgress {
-			task.Start()
 			return task
 		}
 	}
