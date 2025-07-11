@@ -14,7 +14,8 @@ type GUIViewInterface interface {
 
 // GUIViewBase gives views some basic functionality when inherited.
 type GUIViewBase struct {
-	Buttons []*Button
+	Buttons     []*Button
+	RadioGroups []*RadioGroup
 }
 
 func (g *GUIViewBase) AddButton(button *Button) {
@@ -22,4 +23,11 @@ func (g *GUIViewBase) AddButton(button *Button) {
 		g.Buttons = make([]*Button, 0)
 	}
 	g.Buttons = append(g.Buttons, button)
+}
+
+func (g *GUIViewBase) AddRadioGroup(group *RadioGroup) {
+	if g.RadioGroups == nil {
+		g.RadioGroups = make([]*RadioGroup, 0)
+	}
+	g.RadioGroups = append(g.RadioGroups, group)
 }
