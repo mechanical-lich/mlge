@@ -63,19 +63,19 @@ func (b *Toggle) Update(parentX, parentY int) {
 	}
 }
 
-func (b Toggle) Draw(screen *ebiten.Image, parentX, parentY int) {
+func (b Toggle) Draw(screen *ebiten.Image, parentX, parentY int, theme *Theme) {
 	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Scale(float64(b.Width)/32.0, float64(b.Height)/16.0)
+	op.GeoM.Scale(float64(b.Width)/float64(theme.Toggle.Width), float64(b.Height)/float64(theme.Toggle.Height))
 	op.GeoM.Translate(float64(b.X+parentX), float64(b.Y+parentY))
-	sX := 16
-	sY := 64
+	sX := theme.Toggle.SrcX
+	sY := theme.Toggle.SrcY
 
 	if (!b.IsClicked(parentX, parentY) && b.On) || (b.IsClicked(parentX, parentY) && !b.On) {
 		sX += 32
 	}
 
 	//s.drawSpriteEx(int32(x), int32(y), sX, sY, 32, 32, 255, 255, 255, 255, s.uiTexture)
-	screen.DrawImage(resource.GetSubImage(resource.Textures["ui"], sX, sY, config.SpriteSizeW*2, config.SpriteSizeH), op)
+	screen.DrawImage(resource.GetSubImage(resource.Textures["ui"], sX, sY, theme.Toggle.Width, theme.Toggle.Height), op)
 	if b.IconResource != "" {
 		text.Draw(screen, b.Text, 15, b.X+5+16+parentX, b.Y+5+parentY, color.White)
 

@@ -73,25 +73,25 @@ func (rg *RadioGroup) Update(parentX, parentY int) {
 	}
 }
 
-func (rg *RadioGroup) Draw(screen *ebiten.Image, parentX, parentY int) {
+func (rg *RadioGroup) Draw(screen *ebiten.Image, parentX, parentY int, theme *Theme) {
 	for i, button := range rg.Buttons {
 		selected := (i == rg.Selected)
-		button.Draw(screen, selected, parentX, parentY)
+		button.Draw(screen, selected, parentX, parentY, theme)
 	}
 }
 
-func (rb *RadioButton) Draw(screen *ebiten.Image, selected bool, parentX, parentY int) {
+func (rb *RadioButton) Draw(screen *ebiten.Image, selected bool, parentX, parentY int, theme *Theme) {
 	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Scale(float64(rb.Width)/32.0, float64(rb.Height)/16.0)
+	op.GeoM.Scale(float64(rb.Width)/float64(theme.RadioButton.Width), float64(rb.Height)/float64(theme.RadioButton.Height))
 	op.GeoM.Translate(float64(rb.X+parentX), float64(rb.Y+parentY))
-	sX := 16
-	sY := 64
+	sX := theme.RadioButton.SrcX
+	sY := theme.RadioButton.SrcY
 
 	if selected {
 		sX += 32
 	}
 
-	screen.DrawImage(resource.GetSubImage(resource.Textures["ui"], sX, sY, config.SpriteSizeW*2, config.SpriteSizeH), op)
+	screen.DrawImage(resource.GetSubImage(resource.Textures["ui"], sX, sY, theme.RadioButton.Width, theme.RadioButton.Height), op)
 	if rb.IconResource != "" {
 		text.Draw(screen, rb.Label, 15, rb.X+5+16+parentX, rb.Y+5+parentY, color.White)
 

@@ -55,18 +55,18 @@ func NewIconButton(name string, x int, y, iconX, iconY int, iconResource string,
 	return b
 }
 
-func (b Button) Draw(screen *ebiten.Image, parentX, parentY int) {
+func (b Button) Draw(screen *ebiten.Image, parentX, parentY int, theme *Theme) {
 	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Scale(float64(b.Width)/32.0, float64(b.Height)/16.0)
+	op.GeoM.Scale(float64(b.Width)/float64(theme.Button.Width), float64(b.Height)/float64(theme.Button.Height))
 	op.GeoM.Translate(float64(b.X+parentX), float64(b.Y+parentY))
-	sX := 16
-	sY := 64
+	sX := theme.Button.SrcX
+	sY := theme.Button.SrcY
 
 	if b.IsClicked(parentX, parentY) {
 		sX += 32
 	}
 
-	screen.DrawImage(resource.GetSubImage(resource.Textures["ui"], sX, sY, config.SpriteSizeW*2, config.SpriteSizeH), op)
+	screen.DrawImage(resource.GetSubImage(resource.Textures["ui"], sX, sY, theme.Button.Width, theme.Button.Height), op)
 	if b.IconResource != "" {
 		text.Draw(screen, b.Text, 15, b.X+5+16+parentX, b.Y+5+parentY, color.White)
 

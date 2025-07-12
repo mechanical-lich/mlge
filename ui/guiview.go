@@ -9,7 +9,9 @@ import (
 // Since we are dealing with interfaces the GUIView is being passed around by value instead of reference
 type GUIViewInterface interface {
 	Update(state state.StateInterface)
-	Draw(screen *ebiten.Image, s state.StateInterface)
+	UpdateElements(state state.StateInterface)
+	Draw(screen *ebiten.Image, s state.StateInterface, theme *Theme)
+	DrawElements(screen *ebiten.Image, s state.StateInterface, theme *Theme)
 	GetInputFocused() bool
 	GetModalFocused() bool
 	GetPosition() (int, int)
@@ -89,31 +91,31 @@ func (g *GUIViewBase) UpdateElements(s state.StateInterface) {
 	}
 }
 
-func (g *GUIViewBase) DrawElements(screen *ebiten.Image, s state.StateInterface) {
+func (g *GUIViewBase) DrawElements(screen *ebiten.Image, s state.StateInterface, theme *Theme) {
 	// Draw buttons
 	for _, b := range g.Buttons {
-		b.Draw(screen, g.X, g.Y)
+		b.Draw(screen, g.X, g.Y, theme)
 	}
 
 	// Draw radio groups
 	for _, rg := range g.RadioGroups {
-		rg.Draw(screen, g.X, g.Y)
+		rg.Draw(screen, g.X, g.Y, theme)
 	}
 
 	// Draw toggles
 	for _, t := range g.Toggles {
-		t.Draw(screen, g.X, g.Y)
+		t.Draw(screen, g.X, g.Y, theme)
 	}
 
 	// Draw input fields
 	for _, input := range g.Inputs {
-		input.Draw(screen, g.X, g.Y)
+		input.Draw(screen, g.X, g.Y, theme)
 	}
 
 	// Draw modals
 	for _, modal := range g.Modals {
 		if modal.Visible {
-			modal.Draw(screen, s)
+			modal.Draw(screen, s, theme)
 		}
 	}
 }

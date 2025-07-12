@@ -63,6 +63,7 @@ func (m *Modal) Update(s state.StateInterface) {
 	}
 	if v, ok := m.Views[m.CurrentView]; ok {
 		v.SetPosition(m.X, m.Y)
+		v.UpdateElements(s)
 		v.Update(s)
 	}
 }
@@ -100,19 +101,20 @@ func (m *Modal) HandleDragging() {
 }
 
 // Draw renders the modal background, close button, and current view.
-func (m *Modal) Draw(screen *ebiten.Image, s state.StateInterface) {
+func (m *Modal) Draw(screen *ebiten.Image, s state.StateInterface, theme *Theme) {
 	if !m.Visible {
 		return
 	}
 
-	utility.Draw9Slice(screen, m.X, m.Y, m.Width, m.Height, 144, 0, 16, 2)
+	utility.Draw9Slice(screen, m.X, m.Y, m.Width, m.Height, theme.ModalNineSlice.SrcX, theme.ModalNineSlice.SrcY, theme.ModalNineSlice.TileSize, theme.ModalNineSlice.TileScale)
 
-	m.CloseButton.Draw(screen, m.X, m.Y)
+	m.CloseButton.Draw(screen, m.X, m.Y, theme)
 
 	if v, ok := m.Views[m.CurrentView]; ok {
 		// If the view is a GUIViewBase, set its X/Y to modal's X/Y
 		v.SetPosition(m.X, m.Y)
-		v.Draw(screen, s)
+		v.Draw(screen, s, theme)
+		v.DrawElements(screen, s, theme)
 	}
 }
 
