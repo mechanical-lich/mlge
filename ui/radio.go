@@ -91,16 +91,15 @@ func (rb *RadioButton) Draw(screen *ebiten.Image, selected bool, parentX, parent
 		sX += 32
 	}
 
-	screen.DrawImage(resource.GetSubImage(resource.Textures["ui"], sX, sY, theme.RadioButton.Width, theme.RadioButton.Height), op)
+	screen.DrawImage(resource.GetSubImage("ui", sX, sY, theme.RadioButton.Width, theme.RadioButton.Height), op)
 	if rb.IconResource != "" {
 		text.Draw(screen, rb.Label, 15, rb.X+5+16+parentX, rb.Y+5+parentY, color.White)
 
-		iconImage := resource.Textures[rb.IconResource]
-		if iconImage != nil {
+		if rb.IconResource != "" {
 			iconOp := &ebiten.DrawImageOptions{}
 			iconOp.GeoM.Scale(1.0, 1.0)
 			iconOp.GeoM.Translate(float64(rb.X+5+parentX), float64(rb.Y+5+parentY))
-			screen.DrawImage(resource.GetSubImage(iconImage, rb.IconX, rb.IconY, config.SpriteSizeW, config.SpriteSizeH), iconOp)
+			screen.DrawImage(resource.GetSubImage(rb.IconResource, rb.IconX, rb.IconY, config.SpriteSizeW, config.SpriteSizeH), iconOp)
 		}
 	} else {
 		text.Draw(screen, rb.Label, 15, rb.X+5+parentX, rb.Y+5+parentY, color.White)

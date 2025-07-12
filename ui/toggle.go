@@ -75,16 +75,15 @@ func (b Toggle) Draw(screen *ebiten.Image, parentX, parentY int, theme *Theme) {
 	}
 
 	//s.drawSpriteEx(int32(x), int32(y), sX, sY, 32, 32, 255, 255, 255, 255, s.uiTexture)
-	screen.DrawImage(resource.GetSubImage(resource.Textures["ui"], sX, sY, theme.Toggle.Width, theme.Toggle.Height), op)
+	screen.DrawImage(resource.GetSubImage("ui", sX, sY, theme.Toggle.Width, theme.Toggle.Height), op)
 	if b.IconResource != "" {
 		text.Draw(screen, b.Text, 15, b.X+5+16+parentX, b.Y+5+parentY, color.White)
 
-		iconImage := resource.Textures[b.IconResource]
-		if iconImage != nil {
+		if b.IconResource != "" {
 			iconOp := &ebiten.DrawImageOptions{}
 			iconOp.GeoM.Scale(1.0, 1.0)
 			iconOp.GeoM.Translate(float64(b.X+5+parentX), float64(b.Y+5+parentY))
-			screen.DrawImage(resource.GetSubImage(iconImage, b.IconX, b.IconY, config.SpriteSizeW, config.SpriteSizeH), iconOp)
+			screen.DrawImage(resource.GetSubImage(b.IconResource, b.IconX, b.IconY, config.SpriteSizeW, config.SpriteSizeH), iconOp)
 		}
 	} else {
 		text.Draw(screen, b.Text, 15, b.X+5+parentX, b.Y+5+parentY, color.White)

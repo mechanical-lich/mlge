@@ -1,8 +1,6 @@
 package utility
 
 import (
-	"image"
-
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/mechanical-lich/mlge/resource"
 )
@@ -16,22 +14,22 @@ func Draw9Slice(dst *ebiten.Image, x, y, w, h, srcX, srcY, tileSize int, tileSca
 	op := ebiten.DrawImageOptions{}
 	op.GeoM.Scale(float64(tileScale), float64(tileScale))
 	op.GeoM.Translate(float64(x), float64(y))
-	dst.DrawImage(resource.Textures["ui"].SubImage(image.Rect(srcX, srcY, srcX+tileSize, srcY+tileSize)).(*ebiten.Image), &op)
+	dst.DrawImage(resource.GetSubImage("ui", srcX, srcY, tileSize, tileSize), &op)
 
 	op = ebiten.DrawImageOptions{}
 	op.GeoM.Scale(float64(tileScale), float64(tileScale))
 	op.GeoM.Translate(float64(x+w-scaledTile), float64(y))
-	dst.DrawImage(resource.Textures["ui"].SubImage(image.Rect(srcX+2*tileSize, srcY, srcX+3*tileSize, srcY+tileSize)).(*ebiten.Image), &op)
+	dst.DrawImage(resource.GetSubImage("ui", srcX+2*tileSize, srcY, tileSize, tileSize), &op)
 
 	op = ebiten.DrawImageOptions{}
 	op.GeoM.Scale(float64(tileScale), float64(tileScale))
 	op.GeoM.Translate(float64(x), float64(y+h-scaledTile))
-	dst.DrawImage(resource.Textures["ui"].SubImage(image.Rect(srcX, srcY+2*tileSize, srcX+tileSize, srcY+3*tileSize)).(*ebiten.Image), &op)
+	dst.DrawImage(resource.GetSubImage("ui", srcX, srcY+2*tileSize, tileSize, tileSize), &op)
 
 	op = ebiten.DrawImageOptions{}
 	op.GeoM.Scale(float64(tileScale), float64(tileScale))
 	op.GeoM.Translate(float64(x+w-scaledTile), float64(y+h-scaledTile))
-	dst.DrawImage(resource.Textures["ui"].SubImage(image.Rect(srcX+2*tileSize, srcY+2*tileSize, srcX+3*tileSize, srcY+3*tileSize)).(*ebiten.Image), &op)
+	dst.DrawImage(resource.GetSubImage("ui", srcX+2*tileSize, srcY+2*tileSize, tileSize, tileSize), &op)
 
 	// Draw edges
 	// Top and bottom
@@ -39,24 +37,24 @@ func Draw9Slice(dst *ebiten.Image, x, y, w, h, srcX, srcY, tileSize int, tileSca
 		op = ebiten.DrawImageOptions{}
 		op.GeoM.Scale(float64(tileScale), float64(tileScale))
 		op.GeoM.Translate(float64(x+dx), float64(y))
-		dst.DrawImage(resource.Textures["ui"].SubImage(image.Rect(srcX+tileSize, srcY, srcX+2*tileSize, srcY+tileSize)).(*ebiten.Image), &op)
+		dst.DrawImage(resource.GetSubImage("ui", srcX+tileSize, srcY, tileSize, tileSize), &op)
 
 		op = ebiten.DrawImageOptions{}
 		op.GeoM.Scale(float64(tileScale), float64(tileScale))
 		op.GeoM.Translate(float64(x+dx), float64(y+h-scaledTile))
-		dst.DrawImage(resource.Textures["ui"].SubImage(image.Rect(srcX+tileSize, srcY+2*tileSize, srcX+2*tileSize, srcY+3*tileSize)).(*ebiten.Image), &op)
+		dst.DrawImage(resource.GetSubImage("ui", srcX+tileSize, srcY+2*tileSize, tileSize, tileSize), &op)
 	}
 	// Left and right
 	for dy := scaledTile; dy < h-scaledTile; dy += scaledTile {
 		op = ebiten.DrawImageOptions{}
 		op.GeoM.Scale(float64(tileScale), float64(tileScale))
 		op.GeoM.Translate(float64(x), float64(y+dy))
-		dst.DrawImage(resource.Textures["ui"].SubImage(image.Rect(srcX, srcY+tileSize, srcX+tileSize, srcY+2*tileSize)).(*ebiten.Image), &op)
+		dst.DrawImage(resource.GetSubImage("ui", srcX, srcY+tileSize, tileSize, tileSize), &op)
 
 		op = ebiten.DrawImageOptions{}
 		op.GeoM.Scale(float64(tileScale), float64(tileScale))
 		op.GeoM.Translate(float64(x+w-scaledTile), float64(y+dy))
-		dst.DrawImage(resource.Textures["ui"].SubImage(image.Rect(srcX+2*tileSize, srcY+tileSize, srcX+3*tileSize, srcY+2*tileSize)).(*ebiten.Image), &op)
+		dst.DrawImage(resource.GetSubImage("ui", srcX+2*tileSize, srcY+tileSize, tileSize, tileSize), &op)
 	}
 	// Center
 	for dx := scaledTile; dx < w-scaledTile; dx += scaledTile {
@@ -64,7 +62,7 @@ func Draw9Slice(dst *ebiten.Image, x, y, w, h, srcX, srcY, tileSize int, tileSca
 			op = ebiten.DrawImageOptions{}
 			op.GeoM.Scale(float64(tileScale), float64(tileScale))
 			op.GeoM.Translate(float64(x+dx), float64(y+dy))
-			dst.DrawImage(resource.Textures["ui"].SubImage(image.Rect(srcX+tileSize, srcY+tileSize, srcX+2*tileSize, srcY+2*tileSize)).(*ebiten.Image), &op)
+			dst.DrawImage(resource.GetSubImage("ui", srcX+tileSize, srcY+tileSize, tileSize, tileSize), &op)
 		}
 	}
 }

@@ -98,7 +98,7 @@ func (f *InputField) Draw(screen *ebiten.Image, parentX, parentY int, theme *The
 	scaleX := float64(f.Width) / 48.0
 	op.GeoM.Scale(scaleX, float64(f.Height)/16.0)
 	op.GeoM.Translate(float64(f.X+parentX), float64(f.Y+parentY))
-	screen.DrawImage(resource.GetSubImage(resource.Textures["ui"], theme.InputField.SrcX, theme.InputField.SrcY, theme.InputField.Width, theme.InputField.Height), op)
+	screen.DrawImage(resource.GetSubImage("ui", theme.InputField.SrcX, theme.InputField.SrcY, theme.InputField.Width, theme.InputField.Height), op)
 
 	// Draw text
 	txt := string(f.Value)
