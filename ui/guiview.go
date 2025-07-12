@@ -14,20 +14,55 @@ type GUIViewInterface interface {
 
 // GUIViewBase gives views some basic functionality when inherited.
 type GUIViewBase struct {
-	Buttons     []*Button
-	RadioGroups []*RadioGroup
+	Buttons     map[string]*Button
+	RadioGroups map[string]*RadioGroup
+	Toggles     map[string]*Toggle
 }
 
 func (g *GUIViewBase) AddButton(button *Button) {
 	if g.Buttons == nil {
-		g.Buttons = make([]*Button, 0)
+		g.Buttons = make(map[string]*Button, 0)
 	}
-	g.Buttons = append(g.Buttons, button)
+	g.Buttons[button.Name] = button
 }
 
 func (g *GUIViewBase) AddRadioGroup(group *RadioGroup) {
 	if g.RadioGroups == nil {
-		g.RadioGroups = make([]*RadioGroup, 0)
+		g.RadioGroups = make(map[string]*RadioGroup, 0)
 	}
-	g.RadioGroups = append(g.RadioGroups, group)
+	g.RadioGroups[group.Name] = group
+}
+
+func (g *GUIViewBase) AddToggle(toggle *Toggle) {
+	if g.Toggles == nil {
+		g.Toggles = make(map[string]*Toggle, 0)
+	}
+	g.Toggles[toggle.Name] = toggle
+}
+
+func (g *GUIViewBase) UpdateElements() {
+	for _, group := range g.RadioGroups {
+		group.Update()
+	}
+
+	for _, toggle := range g.Toggles {
+		toggle.Update()
+	}
+}
+
+func (g *GUIViewBase) DrawElements(screen *ebiten.Image) {
+	// Draw buttons
+	for _, b := range g.Buttons {
+		b.Draw(screen)
+	}
+
+	// Draw radio groups
+	for _, rg := range g.RadioGroups {
+		rg.Draw(screen)
+	}
+
+	// Draw toggles
+	for _, t := range g.Toggles {
+		t.Draw(screen)
+	}
 }

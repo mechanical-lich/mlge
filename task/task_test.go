@@ -75,7 +75,7 @@ func TestTaskScheduler_GetNextTask(t *testing.T) {
 	ts := &TaskScheduler{}
 
 	// Test case 1: No tasks available
-	task := ts.GetNextTask([]TaskAction{})
+	task := ts.GetNextTask()
 	assert.Nil(t, task)
 
 	// Add some tasks for further testing
@@ -88,23 +88,23 @@ func TestTaskScheduler_GetNextTask(t *testing.T) {
 	ts.AddTask(&task3)
 
 	// Test case 2: Tasks with allowed actions
-	task = ts.GetNextTask([]TaskAction{PickupAction})
+	task = ts.GetNextTask(PickupAction)
 	assert.NotNil(t, task)
 	assert.Equal(t, PickupAction, task.Action)
 
 	// Test case 3: No allowed tasks
-	task = ts.GetNextTask([]TaskAction{DigAction})
+	task = ts.GetNextTask(DigAction)
 	assert.Nil(t, task)
 
 	// Test case 4: First task in list
-	task = ts.GetNextTask([]TaskAction{})
+	task = ts.GetNextTask()
 	assert.NotNil(t, task)
 	assert.Equal(t, AttackAction, task.Action)
 
 	task.Complete()
 
 	// Completed tasks don't get picked
-	task = ts.GetNextTask([]TaskAction{})
+	task = ts.GetNextTask()
 	assert.False(t, task.Completed)
 	assert.NotNil(t, task)
 	assert.Equal(t, ScoutAction, task.Action)
@@ -112,7 +112,7 @@ func TestTaskScheduler_GetNextTask(t *testing.T) {
 	// New escalated task comes next
 	task4 := &Task{X: 5, Y: 6, Action: AggressiveMoveAction, Created: time.Now(), Escalated: true}
 	ts.AddTask(task4)
-	task = ts.GetNextTask([]TaskAction{})
+	task = ts.GetNextTask()
 	assert.True(t, task.Escalated)
 	assert.NotNil(t, task)
 	assert.Equal(t, AggressiveMoveAction, task.Action)

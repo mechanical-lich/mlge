@@ -5,6 +5,8 @@ import (
 	"slices"
 	"sort"
 	"time"
+
+	"github.com/mechanical-lich/mlge/utility"
 )
 
 type TaskAction string
@@ -102,8 +104,8 @@ func (ts *TaskScheduler) SortTasks() {
 // Get the next task.   If allowed list is empty any task is picked.
 // The task will be marked as "started" before it is returned.  It is up to the caller to mark it as completed
 // or to stop it if it can't be completed.
-func (ts *TaskScheduler) GetNextTask(allowed_tasks []TaskAction) *Task {
-	t := ts.PeekNextTask(allowed_tasks)
+func (ts *TaskScheduler) GetNextTask(allowed_tasks ...TaskAction) *Task {
+	t := ts.PeekNextTask(allowed_tasks...)
 	if t != nil {
 		t.Start()
 	}
@@ -111,8 +113,44 @@ func (ts *TaskScheduler) GetNextTask(allowed_tasks []TaskAction) *Task {
 	return t
 }
 
+func (ts *TaskScheduler) GetClosestNextTask(x, y int, allowed_tasks ...TaskAction) *Task {
+	t := ts.PeekClosestNextTask(x, y, allowed_tasks...)
+	if t != nil {
+		t.Start()
+	}
+
+	return t
+}
+
+func (ts *TaskScheduler) PeekClosestNextTask(x, y int, allowed_tasks ...TaskAction) *Task {
+	ts.SortTasks()
+	if len(ts.tasks) == 0 {
+		return nil
+	}
+
+	var closestTask *Task
+	minDist := int(^uint(0) >> 1) // Max int
+
+	for _, task := range ts.tasks {
+		if (len(allowed_tasks) == 0 || slices.Contains(allowed_tasks, task.Action)) &&
+			!task.Completed && !task.InProgress {
+
+			// Manhattan distance
+			dist := utility.Abs(task.X-x) + utility.Abs(task.Y-y)
+
+			// If this task is closer, or if it's the same distance but higher priority (earlier in sorted list)
+			if closestTask == nil || dist < minDist {
+				closestTask = task
+				minDist = dist
+			}
+		}
+	}
+
+	return closestTask
+}
+
 // PeekNextTask returns the next task without marking it as started.
-func (ts *TaskScheduler) PeekNextTask(allowed_tasks []TaskAction) *Task {
+func (ts *TaskScheduler) PeekNextTask(allowed_tasks ...TaskAction) *Task {
 	ts.SortTasks()
 	if len(ts.tasks) == 0 {
 		return nil

@@ -4,12 +4,13 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/mechanical-lich/mlge/config"
 	"github.com/mechanical-lich/mlge/resource"
 	"github.com/mechanical-lich/mlge/text/v2"
 )
 
-type Button struct {
+type Toggle struct {
 	Name         string
 	X            int
 	Y            int
@@ -19,27 +20,29 @@ type Button struct {
 	IconX        int
 	IconY        int
 	IconResource string
+	On           bool
 }
 
-func NewButton(name string, x int, y int, txt string) *Button {
+func NewToggle(name string, x int, y int, txt string) *Toggle {
 	w, h := text.Measure(txt, 16)
 
-	b := &Button{
+	b := &Toggle{
 		Name:   name,
 		X:      x,
 		Y:      y,
 		Width:  int(w + 10),
 		Height: int(h + 10),
 		Text:   txt,
+		On:     false,
 	}
 
 	return b
 }
 
-func NewIconButton(name string, x int, y, iconX, iconY int, iconResource string, txt string) *Button {
+func NewIconToggle(name string, x int, y, iconX, iconY int, iconResource string, txt string) *Toggle {
 	w, h := text.Measure(txt, 16)
 
-	b := &Button{
+	b := &Toggle{
 		Name:         name,
 		X:            x,
 		Y:            y,
@@ -54,14 +57,20 @@ func NewIconButton(name string, x int, y, iconX, iconY int, iconResource string,
 	return b
 }
 
-func (b Button) Draw(screen *ebiten.Image) {
+func (b *Toggle) Update() {
+	if b.IsJustClicked() {
+		b.On = !b.On
+	}
+}
+
+func (b Toggle) Draw(screen *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Scale(float64(b.Width)/32.0, float64(b.Height)/16.0)
 	op.GeoM.Translate(float64(b.X), float64(b.Y))
 	sX := 16
 	sY := 64
 
-	if b.IsClicked() {
+	if (!b.IsClicked() && b.On) || (b.IsClicked() && !b.On) {
 		sX += 32
 	}
 
@@ -82,17 +91,26 @@ func (b Button) Draw(screen *ebiten.Image) {
 	}
 }
 
-func (b *Button) IsWithin(cX int, cY int) bool {
+func (b *Toggle) IsWithin(cX int, cY int) bool {
 	if cX >= b.X && cX <= b.X+b.Width && cY >= b.Y && cY <= b.Height+b.Y {
 		return true
 	}
 	return false
 }
 
-func (b *Button) IsClicked() bool {
+func (b *Toggle) IsClicked() bool {
 	cX, cY := ebiten.CursorPosition()
 
 	if cX >= b.X && cX <= b.X+b.Width && cY >= b.Y && cY <= b.Height+b.Y && ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		return true
+	}
+	return false
+}
+
+func (b *Toggle) IsJustClicked() bool {
+	cX, cY := ebiten.CursorPosition()
+
+	if cX >= b.X && cX <= b.X+b.Width && cY >= b.Y && cY <= b.Height+b.Y && inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
 		return true
 	}
 	return false
