@@ -20,7 +20,8 @@ type Modal struct {
 	dragging    bool
 	dragOffsetX int
 	dragOffsetY int
-	bg          *ebiten.Image // Background image for the modal
+	bg          *ebiten.Image            // Background image for the modal
+	op          *ebiten.DrawImageOptions // Options for drawing the modal background
 }
 
 // NewModal creates a new modal with initial view.
@@ -36,6 +37,7 @@ func NewModal(name string, x, y, width, height int, initialView string, views ma
 		Height:      height,
 		Visible:     true,
 		CloseButton: closeBtn,
+		op:          &ebiten.DrawImageOptions{},
 	}
 }
 
@@ -111,9 +113,9 @@ func (m *Modal) Draw(screen *ebiten.Image, s state.StateInterface, theme *Theme)
 		utility.Draw9Slice(m.bg, 0, 0, m.Width, m.Height, theme.ModalNineSlice.SrcX, theme.ModalNineSlice.SrcY, theme.ModalNineSlice.TileSize, theme.ModalNineSlice.TileScale)
 	}
 	// Draw the modal background
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(float64(m.X), float64(m.Y))
-	screen.DrawImage(m.bg, op)
+	m.op.GeoM.Reset()
+	m.op.GeoM.Translate(float64(m.X), float64(m.Y))
+	screen.DrawImage(m.bg, m.op)
 
 	m.CloseButton.Draw(screen, m.X, m.Y, theme)
 

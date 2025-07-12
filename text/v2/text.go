@@ -16,6 +16,8 @@ import (
 var robotoRegularTTF []byte
 var robotoRegularFaceSource *text.GoTextFaceSource
 
+var op = &text.DrawOptions{}
+
 func init() {
 	s, err := text.NewGoTextFaceSource(bytes.NewReader(robotoRegularTTF))
 	if err != nil {
@@ -25,7 +27,7 @@ func init() {
 }
 
 func Draw(dst *ebiten.Image, txt string, size float64, x int, y int, clr color.Color) {
-	op := &text.DrawOptions{}
+	op.GeoM.Reset()
 	op.GeoM.Translate(float64(x), float64(y))
 
 	r, g, b, a := clr.RGBA()

@@ -20,6 +20,7 @@ type Button struct {
 	IconX        int
 	IconY        int
 	IconResource string
+	op           *ebiten.DrawImageOptions
 }
 
 func NewButton(name string, x int, y int, txt string) *Button {
@@ -32,6 +33,7 @@ func NewButton(name string, x int, y int, txt string) *Button {
 		Width:  int(w + 10),
 		Height: int(h + 10),
 		Text:   txt,
+		op:     &ebiten.DrawImageOptions{},
 	}
 
 	return b
@@ -50,15 +52,16 @@ func NewIconButton(name string, x int, y, iconX, iconY int, iconResource string,
 		Width:        int(w + 10 + 16),
 		Height:       int(h + 16),
 		Text:         txt,
+		op:           &ebiten.DrawImageOptions{},
 	}
 
 	return b
 }
 
 func (b Button) Draw(screen *ebiten.Image, parentX, parentY int, theme *Theme) {
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Scale(float64(b.Width)/float64(theme.Button.Width), float64(b.Height)/float64(theme.Button.Height))
-	op.GeoM.Translate(float64(b.X+parentX), float64(b.Y+parentY))
+	b.op.GeoM.Reset()
+	b.op.GeoM.Scale(float64(b.Width)/float64(theme.Button.Width), float64(b.Height)/float64(theme.Button.Height))
+	b.op.GeoM.Translate(float64(b.X+parentX), float64(b.Y+parentY))
 	sX := theme.Button.SrcX
 	sY := theme.Button.SrcY
 
@@ -66,7 +69,7 @@ func (b Button) Draw(screen *ebiten.Image, parentX, parentY int, theme *Theme) {
 		sX += 32
 	}
 
-	screen.DrawImage(resource.GetSubImage("ui", sX, sY, theme.Button.Width, theme.Button.Height), op)
+	screen.DrawImage(resource.GetSubImage("ui", sX, sY, theme.Button.Width, theme.Button.Height), b.op)
 	if b.IconResource != "" {
 		text.Draw(screen, b.Text, 15, b.X+5+16+parentX, b.Y+5+parentY, color.White)
 

@@ -3,8 +3,8 @@ package ecs
 // SystemInterface - interface that represents a system, world is an interface and should be cast to whatever data
 // structure the game is currently using or that the system cares about.
 type SystemInterface interface {
-	UpdateSystem(data interface{}) error
-	UpdateEntity(data interface{}, entity *Entity) error
+	UpdateSystem(data any) error
+	UpdateEntity(data any, entity *Entity) error
 	Requires() []ComponentType
 }
 
@@ -21,7 +21,7 @@ func (s *SystemManager) AddSystem(system SystemInterface) {
 	s.systems = append(s.systems, system)
 }
 
-func (s *SystemManager) UpdateSystems(world interface{}) error {
+func (s *SystemManager) UpdateSystems(world any) error {
 	for system := range s.systems {
 		err := s.systems[system].UpdateSystem(world)
 		if err != nil {
@@ -32,7 +32,7 @@ func (s *SystemManager) UpdateSystems(world interface{}) error {
 }
 
 // UpdateSystemsForEntity - Iterates through the systems for the specific entity
-func (s *SystemManager) UpdateSystemsForEntity(world interface{}, entity *Entity) error {
+func (s *SystemManager) UpdateSystemsForEntity(world any, entity *Entity) error {
 	for system := range s.systems {
 		if entity.HasComponents(s.systems[system].Requires()...) {
 			err := s.systems[system].UpdateEntity(world, entity)

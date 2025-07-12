@@ -2,7 +2,6 @@ package ui
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/mechanical-lich/mlge/config"
 	"github.com/mechanical-lich/mlge/state"
 )
 
@@ -11,13 +10,14 @@ type GUI struct {
 	State       GUIViewInterface
 	Theme       *Theme
 	CursorImage *ebiten.Image
+	op          *ebiten.DrawImageOptions
 }
 
 func NewGUI(startingView GUIViewInterface, theme *Theme) *GUI {
 	if theme == nil {
 		theme = &DefaultTheme
 	}
-	return &GUI{State: startingView, Theme: theme}
+	return &GUI{State: startingView, Theme: theme, op: &ebiten.DrawImageOptions{}}
 }
 
 func (g *GUI) Update(s state.StateInterface) {
@@ -35,15 +35,13 @@ func (g *GUI) Draw(screen *ebiten.Image, s state.StateInterface) {
 
 func (g *GUI) DrawCursor(screen *ebiten.Image, s state.StateInterface) {
 	//Cursor logic
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Scale(float64(config.TileSizeW/config.SpriteSizeW), float64(config.TileSizeH/config.SpriteSizeH))
 	if g.CursorImage != nil {
 		ebiten.SetCursorMode(ebiten.CursorModeHidden)
 		cX, cY := ebiten.CursorPosition()
-		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(float64(cX), float64(cY))
-		op.GeoM.Scale(1.0, 1.0)
-		screen.DrawImage(g.CursorImage, op)
+		g.op.GeoM.Reset()
+		g.op.GeoM.Translate(float64(cX), float64(cY))
+		g.op.GeoM.Scale(1.0, 1.0)
+		screen.DrawImage(g.CursorImage, g.op)
 	} else {
 		ebiten.SetCursorMode(ebiten.CursorModeVisible)
 

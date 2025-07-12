@@ -16,6 +16,7 @@ type RadioButton struct {
 	IconX         int
 	IconY         int
 	IconResource  string
+	op            *ebiten.DrawImageOptions // Options for drawing the radio button background
 }
 
 type RadioGroup struct {
@@ -44,6 +45,7 @@ func NewRadioButton(x, y int, label string) RadioButton {
 		Width:  int(w) + 10,
 		Height: int(h) + 10, // Add some padding
 		Label:  label,
+		op:     &ebiten.DrawImageOptions{},
 	}
 }
 
@@ -59,6 +61,7 @@ func NewIconRadioButton(x int, y, iconX, iconY int, iconResource string, label s
 		Width:        int(w + 10 + 16),
 		Height:       int(h + 16),
 		Label:        label,
+		op:           &ebiten.DrawImageOptions{},
 	}
 
 	return b
@@ -81,9 +84,9 @@ func (rg *RadioGroup) Draw(screen *ebiten.Image, parentX, parentY int, theme *Th
 }
 
 func (rb *RadioButton) Draw(screen *ebiten.Image, selected bool, parentX, parentY int, theme *Theme) {
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Scale(float64(rb.Width)/float64(theme.RadioButton.Width), float64(rb.Height)/float64(theme.RadioButton.Height))
-	op.GeoM.Translate(float64(rb.X+parentX), float64(rb.Y+parentY))
+	rb.op.GeoM.Reset()
+	rb.op.GeoM.Scale(float64(rb.Width)/float64(theme.RadioButton.Width), float64(rb.Height)/float64(theme.RadioButton.Height))
+	rb.op.GeoM.Translate(float64(rb.X+parentX), float64(rb.Y+parentY))
 	sX := theme.RadioButton.SrcX
 	sY := theme.RadioButton.SrcY
 
@@ -91,15 +94,15 @@ func (rb *RadioButton) Draw(screen *ebiten.Image, selected bool, parentX, parent
 		sX += 32
 	}
 
-	screen.DrawImage(resource.GetSubImage("ui", sX, sY, theme.RadioButton.Width, theme.RadioButton.Height), op)
+	screen.DrawImage(resource.GetSubImage("ui", sX, sY, theme.RadioButton.Width, theme.RadioButton.Height), rb.op)
 	if rb.IconResource != "" {
 		text.Draw(screen, rb.Label, 15, rb.X+5+16+parentX, rb.Y+5+parentY, color.White)
 
 		if rb.IconResource != "" {
-			iconOp := &ebiten.DrawImageOptions{}
-			iconOp.GeoM.Scale(1.0, 1.0)
-			iconOp.GeoM.Translate(float64(rb.X+5+parentX), float64(rb.Y+5+parentY))
-			screen.DrawImage(resource.GetSubImage(rb.IconResource, rb.IconX, rb.IconY, config.SpriteSizeW, config.SpriteSizeH), iconOp)
+			rb.op.GeoM.Reset()
+			rb.op.GeoM.Scale(1.0, 1.0)
+			rb.op.GeoM.Translate(float64(rb.X+5+parentX), float64(rb.Y+5+parentY))
+			screen.DrawImage(resource.GetSubImage(rb.IconResource, rb.IconX, rb.IconY, config.SpriteSizeW, config.SpriteSizeH), rb.op)
 		}
 	} else {
 		text.Draw(screen, rb.Label, 15, rb.X+5+parentX, rb.Y+5+parentY, color.White)

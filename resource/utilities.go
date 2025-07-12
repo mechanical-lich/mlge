@@ -1,18 +1,22 @@
 package resource
 
 import (
-	"fmt"
 	"image"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // Subimage cache so we can reuse sub-images without creating new ones
-var subImageCache = make(map[string]*ebiten.Image)
+type subCacheKey struct {
+	name                string
+	x, y, width, height int
+}
+
+var subImageCache = make(map[subCacheKey]*ebiten.Image)
 
 // Define a generic function to get a sub-image
 func GetSubImage(name string, x, y, width, height int) *ebiten.Image {
-	cacheKey := fmt.Sprintf("%s_%d_%d_%d_%d", name, x, y, width, height)
+	cacheKey := subCacheKey{name: name, x: x, y: y, width: width, height: height}
 	if img, found := subImageCache[cacheKey]; found {
 		return img
 	}
@@ -23,7 +27,7 @@ func GetSubImage(name string, x, y, width, height int) *ebiten.Image {
 
 // Define a generic function to get a sub-image
 func GetSubImageByTexture(texture *ebiten.Image, x, y, width, height int) *ebiten.Image {
-	cacheKey := fmt.Sprintf("%d_%d_%d_%d", x, y, width, height)
+	cacheKey := subCacheKey{name: "", x: x, y: y, width: width, height: height}
 	if img, found := subImageCache[cacheKey]; found {
 		return img
 	}

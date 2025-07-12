@@ -19,6 +19,7 @@ type InputField struct {
 	Value     []rune
 	Cursor    int // index in Value
 	Focused   bool
+	op        *ebiten.DrawImageOptions // Options for drawing the input field background
 }
 
 func NewInputField(name string, x, y, width, maxLength int) *InputField {
@@ -34,6 +35,7 @@ func NewInputField(name string, x, y, width, maxLength int) *InputField {
 		Value:     []rune{},
 		Cursor:    0,
 		Focused:   false,
+		op:        &ebiten.DrawImageOptions{},
 	}
 }
 
@@ -94,11 +96,11 @@ func (f *InputField) Update(parentX, parentY int) {
 
 func (f *InputField) Draw(screen *ebiten.Image, parentX, parentY int, theme *Theme) {
 	// Stretch the input field sprite horizontally
-	op := &ebiten.DrawImageOptions{}
+	f.op.GeoM.Reset()
 	scaleX := float64(f.Width) / 48.0
-	op.GeoM.Scale(scaleX, float64(f.Height)/16.0)
-	op.GeoM.Translate(float64(f.X+parentX), float64(f.Y+parentY))
-	screen.DrawImage(resource.GetSubImage("ui", theme.InputField.SrcX, theme.InputField.SrcY, theme.InputField.Width, theme.InputField.Height), op)
+	f.op.GeoM.Scale(scaleX, float64(f.Height)/16.0)
+	f.op.GeoM.Translate(float64(f.X+parentX), float64(f.Y+parentY))
+	screen.DrawImage(resource.GetSubImage("ui", theme.InputField.SrcX, theme.InputField.SrcY, theme.InputField.Width, theme.InputField.Height), f.op)
 
 	// Draw text
 	txt := string(f.Value)
