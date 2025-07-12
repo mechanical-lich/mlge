@@ -1,10 +1,9 @@
 package ui
 
 import (
-	"image/color"
-
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/mechanical-lich/mlge/state"
+	"github.com/mechanical-lich/mlge/utility"
 )
 
 // Modal wraps a view and provides modal behavior with a close button and view states.
@@ -17,12 +16,18 @@ type Modal struct {
 	Visible       bool
 	CloseButton   *Button
 	OnClose       func()
+
+	dragging    bool
+	dragOffsetX int
+	dragOffsetY int
 }
 
 // NewModal creates a new modal with initial view.
 func NewModal(name string, x, y, width, height int, initialView string, views map[string]GUIViewInterface) *Modal {
-	closeBtn := NewButton("close", x+width-24, y+8, "X")
+	closeBtn := NewButton("close", width-24, 8, "X")
+
 	return &Modal{
+		Name:        name,
 		Views:       views,
 		CurrentView: initialView,
 		X:           x,
@@ -46,10 +51,10 @@ func (m *Modal) Update(s state.StateInterface) {
 	if !m.Visible {
 		return
 	}
-	m.CloseButton.X = m.X + m.Width - 24
-	m.CloseButton.Y = m.Y + 8
 
-	if m.CloseButton.IsClicked() {
+	m.HandleDragging()
+
+	if m.CloseButton.IsJustClicked(m.X, m.Y) && !m.dragging {
 		m.Visible = false
 		if m.OnClose != nil {
 			m.OnClose()
@@ -57,7 +62,40 @@ func (m *Modal) Update(s state.StateInterface) {
 		return
 	}
 	if v, ok := m.Views[m.CurrentView]; ok {
+		v.SetPosition(m.X, m.Y)
 		v.Update(s)
+	}
+}
+
+func (m *Modal) HandleDragging() {
+	// Get mouse position and button state
+	if !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		m.dragging = false
+		return
+	}
+
+	mouseX, mouseY := ebiten.CursorPosition()
+
+	// Define a draggable area (e.g., top 32px of modal, excluding close button)
+	dragAreaX := m.X
+	dragAreaY := m.Y
+	dragAreaW := m.Width - 32 // leave space for close button
+	dragAreaH := 32
+
+	// Start dragging if mouse pressed in drag area and not already dragging
+	if !m.dragging &&
+		mouseX >= dragAreaX && mouseX < dragAreaX+dragAreaW &&
+		mouseY >= dragAreaY && mouseY < dragAreaY+dragAreaH &&
+		!m.CloseButton.IsClicked(m.X, m.Y) {
+		m.dragging = true
+		m.dragOffsetX = mouseX - m.X
+		m.dragOffsetY = mouseY - m.Y
+	}
+
+	// If dragging, update modal position
+	if m.dragging {
+		m.X = mouseX - m.dragOffsetX
+		m.Y = mouseY - m.dragOffsetY
 	}
 }
 
@@ -66,18 +104,14 @@ func (m *Modal) Draw(screen *ebiten.Image, s state.StateInterface) {
 	if !m.Visible {
 		return
 	}
-	// Draw modal background (simple rectangle, replace with sprite if needed)
-	bg := ebiten.NewImage(m.Width, m.Height)
-	bg.Fill(color.RGBA{30, 30, 30, 240})
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(float64(m.X), float64(m.Y))
-	screen.DrawImage(bg, op)
 
-	// Draw close button
-	m.CloseButton.Draw(screen)
+	utility.Draw9Slice(screen, m.X, m.Y, m.Width, m.Height, 144, 0, 16, 2)
 
-	// Draw current view inside modal
+	m.CloseButton.Draw(screen, m.X, m.Y)
+
 	if v, ok := m.Views[m.CurrentView]; ok {
+		// If the view is a GUIViewBase, set its X/Y to modal's X/Y
+		v.SetPosition(m.X, m.Y)
 		v.Draw(screen, s)
 	}
 }

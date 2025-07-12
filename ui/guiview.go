@@ -11,6 +11,9 @@ type GUIViewInterface interface {
 	Update(state state.StateInterface)
 	Draw(screen *ebiten.Image, s state.StateInterface)
 	GetInputFocused() bool
+	GetModalFocused() bool
+	GetPosition() (int, int)
+	SetPosition(x, y int)
 }
 
 // GUIViewBase gives views some basic functionality when inherited.
@@ -20,6 +23,16 @@ type GUIViewBase struct {
 	Toggles     map[string]*Toggle
 	Inputs      map[string]*InputField
 	Modals      map[string]*Modal
+	X, Y        int // Add offset for the view
+}
+
+func (g *GUIViewBase) GetPosition() (int, int) {
+	return g.X, g.Y
+}
+
+func (g *GUIViewBase) SetPosition(x, y int) {
+	g.X = x
+	g.Y = y
 }
 
 func (g *GUIViewBase) AddButton(button *Button) {
@@ -60,15 +73,15 @@ func (g *GUIViewBase) AddModal(modal *Modal) {
 
 func (g *GUIViewBase) UpdateElements(s state.StateInterface) {
 	for _, group := range g.RadioGroups {
-		group.Update()
+		group.Update(g.X, g.Y)
 	}
 
 	for _, toggle := range g.Toggles {
-		toggle.Update()
+		toggle.Update(g.X, g.Y)
 	}
 
 	for _, input := range g.Inputs {
-		input.Update()
+		input.Update(g.X, g.Y)
 	}
 
 	for _, modal := range g.Modals {
@@ -79,28 +92,28 @@ func (g *GUIViewBase) UpdateElements(s state.StateInterface) {
 func (g *GUIViewBase) DrawElements(screen *ebiten.Image, s state.StateInterface) {
 	// Draw buttons
 	for _, b := range g.Buttons {
-		b.Draw(screen)
+		b.Draw(screen, g.X, g.Y)
 	}
 
 	// Draw radio groups
 	for _, rg := range g.RadioGroups {
-		rg.Draw(screen)
+		rg.Draw(screen, g.X, g.Y)
 	}
 
 	// Draw toggles
 	for _, t := range g.Toggles {
-		t.Draw(screen)
+		t.Draw(screen, g.X, g.Y)
 	}
 
 	// Draw input fields
 	for _, input := range g.Inputs {
-		input.Draw(screen)
+		input.Draw(screen, g.X, g.Y)
 	}
 
 	// Draw modals
 	for _, modal := range g.Modals {
 		if modal.Visible {
-			modal.Draw(screen, s) // Pass nil for state if not needed
+			modal.Draw(screen, s)
 		}
 	}
 }
@@ -108,6 +121,21 @@ func (g *GUIViewBase) DrawElements(screen *ebiten.Image, s state.StateInterface)
 func (g *GUIViewBase) GetInputFocused() bool {
 	for _, input := range g.Inputs {
 		if input.Focused {
+			return true
+		}
+	}
+
+	for _, modal := range g.Modals {
+		if modal.Visible && modal.GetInputFocused() {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *GUIViewBase) GetModalFocused() bool {
+	for _, modal := range g.Modals {
+		if modal.Visible {
 			return true
 		}
 	}

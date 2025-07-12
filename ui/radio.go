@@ -64,26 +64,26 @@ func NewIconRadioButton(x int, y, iconX, iconY int, iconResource string, label s
 	return b
 }
 
-func (rg *RadioGroup) Update() {
+func (rg *RadioGroup) Update(parentX, parentY int) {
 	for i, button := range rg.Buttons {
-		if button.IsClicked() {
+		if button.IsClicked(parentX, parentY) {
 			rg.Selected = i
 			break
 		}
 	}
 }
 
-func (rg *RadioGroup) Draw(screen *ebiten.Image) {
+func (rg *RadioGroup) Draw(screen *ebiten.Image, parentX, parentY int) {
 	for i, button := range rg.Buttons {
 		selected := (i == rg.Selected)
-		button.Draw(screen, selected)
+		button.Draw(screen, selected, parentX, parentY)
 	}
 }
 
-func (rb *RadioButton) Draw(screen *ebiten.Image, selected bool) {
+func (rb *RadioButton) Draw(screen *ebiten.Image, selected bool, parentX, parentY int) {
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Scale(float64(rb.Width)/32.0, float64(rb.Height)/16.0)
-	op.GeoM.Translate(float64(rb.X), float64(rb.Y))
+	op.GeoM.Translate(float64(rb.X+parentX), float64(rb.Y+parentY))
 	sX := 16
 	sY := 64
 
@@ -93,32 +93,34 @@ func (rb *RadioButton) Draw(screen *ebiten.Image, selected bool) {
 
 	screen.DrawImage(resource.GetSubImage(resource.Textures["ui"], sX, sY, config.SpriteSizeW*2, config.SpriteSizeH), op)
 	if rb.IconResource != "" {
-		text.Draw(screen, rb.Label, 15, rb.X+5+16, rb.Y+5, color.White)
+		text.Draw(screen, rb.Label, 15, rb.X+5+16+parentX, rb.Y+5+parentY, color.White)
 
 		iconImage := resource.Textures[rb.IconResource]
 		if iconImage != nil {
 			iconOp := &ebiten.DrawImageOptions{}
 			iconOp.GeoM.Scale(1.0, 1.0)
-			iconOp.GeoM.Translate(float64(rb.X+5), float64(rb.Y+5))
+			iconOp.GeoM.Translate(float64(rb.X+5+parentX), float64(rb.Y+5+parentY))
 			screen.DrawImage(resource.GetSubImage(iconImage, rb.IconX, rb.IconY, config.SpriteSizeW, config.SpriteSizeH), iconOp)
 		}
 	} else {
-		text.Draw(screen, rb.Label, 15, rb.X+5, rb.Y+5, color.White)
+		text.Draw(screen, rb.Label, 15, rb.X+5+parentX, rb.Y+5+parentY, color.White)
 	}
 }
 
-func (b *RadioButton) IsWithin(cX int, cY int) bool {
-	if cX >= b.X && cX <= b.X+b.Width && cY >= b.Y && cY <= b.Height+b.Y {
+func (b *RadioButton) IsWithin(cX int, cY int, parentX, parentY int) bool {
+	if cX >= b.X+parentX && cX <= b.X+b.Width+parentX && cY >= b.Y+parentY && cY <= b.Height+b.Y+parentY {
 		return true
 	}
 	return false
 }
 
-func (b *RadioButton) IsClicked() bool {
-	cX, cY := ebiten.CursorPosition()
+func (b *RadioButton) IsClicked(parentX, parentY int) bool {
+	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		cX, cY := ebiten.CursorPosition()
 
-	if cX >= b.X && cX <= b.X+b.Width && cY >= b.Y && cY <= b.Height+b.Y && ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-		return true
+		if cX >= b.X+parentX && cX <= b.X+b.Width+parentX && cY >= b.Y+parentY && cY <= b.Height+b.Y+parentY {
+			return true
+		}
 	}
 	return false
 }

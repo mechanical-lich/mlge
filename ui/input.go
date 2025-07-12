@@ -37,13 +37,11 @@ func NewInputField(name string, x, y, width, maxLength int) *InputField {
 	}
 }
 
-func (f *InputField) Update() {
+func (f *InputField) Update(parentX, parentY int) {
 	cX, cY := ebiten.CursorPosition()
-	//wasFocused := f.Focused
-
 	// Focus/unfocus logic
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		if cX >= f.X && cX <= f.X+f.Width && cY >= f.Y && cY <= f.Y+16 {
+		if cX >= f.X+parentX && cX <= f.X+f.Width+parentX && cY >= f.Y+parentY && cY <= f.Y+16+parentY {
 			f.Focused = true
 		} else {
 			f.Focused = false
@@ -94,33 +92,33 @@ func (f *InputField) Update() {
 	}
 }
 
-func (f *InputField) Draw(screen *ebiten.Image) {
+func (f *InputField) Draw(screen *ebiten.Image, parentX, parentY int) {
 	// Stretch the input field sprite horizontally
 	op := &ebiten.DrawImageOptions{}
 	scaleX := float64(f.Width) / 48.0
 	op.GeoM.Scale(scaleX, float64(f.Height)/16.0)
-	op.GeoM.Translate(float64(f.X), float64(f.Y))
+	op.GeoM.Translate(float64(f.X+parentX), float64(f.Y+parentY))
 	screen.DrawImage(resource.GetSubImage(resource.Textures["ui"], 16, 80, 48, 16), op)
 
 	// Draw text
 	txt := string(f.Value)
-	text.Draw(screen, txt, 15, f.X+5, f.Y+5, color.White)
+	text.Draw(screen, txt, 15, f.X+5+parentX, f.Y+5+parentY, color.White)
 
 	// Draw cursor if focused
 	if f.Focused {
-		cursorX := f.X + 5
+		cursorX := f.X + 5 + parentX
 		if f.Cursor > 0 {
 			sub := string(f.Value[:f.Cursor])
 			w, _ := text.Measure(sub, 16)
 			cursorX += int(w)
 		}
 		// Draw a simple vertical line as cursor
-		ebitenutil.DrawRect(screen, float64(cursorX), float64(f.Y+4), 2, 12, color.White)
+		ebitenutil.DrawRect(screen, float64(cursorX), float64(f.Y+4+parentY), 2, 12, color.White)
 	}
 }
 
-func (f *InputField) IsWithin(cX, cY int) bool {
-	return cX >= f.X && cX <= f.X+f.Width && cY >= f.Y && cY <= f.Y+16
+func (f *InputField) IsWithin(cX, cY int, parentX, parentY int) bool {
+	return cX >= f.X+parentX && cX <= f.X+f.Width+parentX && cY >= f.Y+parentY && cY <= f.Y+16+parentY
 }
 
 func (f *InputField) SetValue(val string) {
