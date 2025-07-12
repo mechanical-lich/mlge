@@ -19,6 +19,7 @@ type GUIViewBase struct {
 	RadioGroups map[string]*RadioGroup
 	Toggles     map[string]*Toggle
 	Inputs      map[string]*InputField
+	Modals      map[string]*Modal
 }
 
 func (g *GUIViewBase) AddButton(button *Button) {
@@ -49,7 +50,15 @@ func (g *GUIViewBase) AddInputField(input *InputField) {
 	g.Inputs[input.Name] = input
 }
 
-func (g *GUIViewBase) UpdateElements() {
+func (g *GUIViewBase) AddModal(modal *Modal) {
+	if g.Modals == nil {
+		g.Modals = make(map[string]*Modal)
+	}
+
+	g.Modals[modal.Name] = modal
+}
+
+func (g *GUIViewBase) UpdateElements(s state.StateInterface) {
 	for _, group := range g.RadioGroups {
 		group.Update()
 	}
@@ -61,9 +70,13 @@ func (g *GUIViewBase) UpdateElements() {
 	for _, input := range g.Inputs {
 		input.Update()
 	}
+
+	for _, modal := range g.Modals {
+		modal.Update(s)
+	}
 }
 
-func (g *GUIViewBase) DrawElements(screen *ebiten.Image) {
+func (g *GUIViewBase) DrawElements(screen *ebiten.Image, s state.StateInterface) {
 	// Draw buttons
 	for _, b := range g.Buttons {
 		b.Draw(screen)
@@ -82,6 +95,13 @@ func (g *GUIViewBase) DrawElements(screen *ebiten.Image) {
 	// Draw input fields
 	for _, input := range g.Inputs {
 		input.Draw(screen)
+	}
+
+	// Draw modals
+	for _, modal := range g.Modals {
+		if modal.Visible {
+			modal.Draw(screen, s) // Pass nil for state if not needed
+		}
 	}
 }
 
