@@ -74,10 +74,10 @@ func (b Button) Draw(screen *ebiten.Image, parentX, parentY int, theme *Theme) {
 		text.Draw(screen, b.Text, 15, b.X+5+16+parentX, b.Y+5+parentY, color.White)
 
 		if b.IconResource != "" {
-			iconOp := &ebiten.DrawImageOptions{}
-			iconOp.GeoM.Scale(1.0, 1.0)
-			iconOp.GeoM.Translate(float64(b.X+5+parentX), float64(b.Y+5+parentY))
-			screen.DrawImage(resource.GetSubImage(b.IconResource, b.IconX, b.IconY, config.SpriteSizeW, config.SpriteSizeH), iconOp)
+			b.op.GeoM.Reset()
+			b.op.GeoM.Scale(1.0, 1.0)
+			b.op.GeoM.Translate(float64(b.X+5+parentX), float64(b.Y+5+parentY))
+			screen.DrawImage(resource.GetSubImage(b.IconResource, b.IconX, b.IconY, config.SpriteSizeW, config.SpriteSizeH), b.op)
 		}
 	} else {
 		text.Draw(screen, b.Text, 15, b.X+5+parentX, b.Y+5+parentY, color.White)

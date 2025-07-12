@@ -9,7 +9,6 @@ import (
 // SrcX, srcY are the top-left corner of the 9-slice source image.
 func Draw9Slice(dst *ebiten.Image, x, y, w, h, srcX, srcY, tileSize int, tileScale int) {
 	scaledTile := tileSize * tileScale
-
 	// Draw corners
 	op := ebiten.DrawImageOptions{}
 	op.GeoM.Scale(float64(tileScale), float64(tileScale))
