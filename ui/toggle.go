@@ -63,7 +63,7 @@ func (b *Toggle) Update(parentX, parentY int) {
 	}
 }
 
-func (b Toggle) Draw(screen *ebiten.Image, parentX, parentY int, theme *Theme) {
+func (b *Toggle) Draw(screen *ebiten.Image, parentX, parentY int, theme *Theme) {
 	b.op.GeoM.Reset()
 	b.op.GeoM.Scale(float64(b.Width)/float64(theme.Toggle.Width), float64(b.Height)/float64(theme.Toggle.Height))
 	b.op.GeoM.Translate(float64(b.X+parentX), float64(b.Y+parentY))
