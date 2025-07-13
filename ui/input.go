@@ -4,8 +4,8 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/mechanical-lich/mlge/resource"
 	"github.com/mechanical-lich/mlge/text/v2"
 )
@@ -113,7 +113,7 @@ func (f *InputField) Draw(screen *ebiten.Image, parentX, parentY int, theme *The
 			cursorX += int(w)
 		}
 		// Draw a simple vertical line as cursor
-		ebitenutil.DrawRect(screen, float64(cursorX), float64(f.Y+4+parentY), 2, 12, color.White)
+		vector.DrawFilledRect(screen, float32(cursorX), float32(f.Y+4+parentY), 2, 12, color.White, false)
 	}
 }
 
