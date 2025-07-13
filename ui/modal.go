@@ -8,36 +8,36 @@ import (
 
 // Modal wraps a view and provides modal behavior with a close button and view states.
 type Modal struct {
-	Name          string
-	Views         map[string]GUIViewInterface
-	CurrentView   string
-	X, Y          int
-	Width, Height int
-	Visible       bool
-	CloseButton   *Button
-	OnClose       func()
+	ElementBase
+
+	Views       map[string]GUIViewInterface
+	CurrentView string
+
+	CloseButton *Button
+	OnClose     func()
 
 	dragging    bool
 	dragOffsetX int
 	dragOffsetY int
-	bg          *ebiten.Image            // Background image for the modal
-	op          *ebiten.DrawImageOptions // Options for drawing the modal background
+	bg          *ebiten.Image // Background image for the modal
 }
 
 // NewModal creates a new modal with initial view.
 func NewModal(name string, x, y, width, height int, initialView string, views map[string]GUIViewInterface) *Modal {
 	closeBtn := NewButton("close", width-24, 8, "X")
 	return &Modal{
-		Name:        name,
+		ElementBase: ElementBase{
+			Name:    name,
+			X:       x,
+			Y:       y,
+			Width:   width,
+			Height:  height,
+			Visible: false,
+			op:      &ebiten.DrawImageOptions{},
+		},
 		Views:       views,
 		CurrentView: initialView,
-		X:           x,
-		Y:           y,
-		Width:       width,
-		Height:      height,
-		Visible:     false,
 		CloseButton: closeBtn,
-		op:          &ebiten.DrawImageOptions{},
 	}
 }
 

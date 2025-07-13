@@ -10,17 +10,12 @@ import (
 )
 
 type RadioButton struct {
-	X, Y          int
-	Width, Height int
-	Label         string
-	IconX         int
-	IconY         int
-	IconResource  string
-	op            *ebiten.DrawImageOptions // Options for drawing the radio button background
+	ElementBase
+	Label string
 }
 
 type RadioGroup struct {
-	Name     string
+	ElementBase
 	Buttons  []RadioButton
 	Selected int
 }
@@ -30,7 +25,9 @@ func NewRadioGroup(name string, buttons []RadioButton) *RadioGroup {
 		buttons = make([]RadioButton, 0)
 	}
 	return &RadioGroup{
-		Name:     name,
+		ElementBase: ElementBase{
+			Name: name,
+		},
 		Buttons:  buttons,
 		Selected: -1, // No selection by default
 	}
@@ -40,12 +37,14 @@ func NewRadioButton(x, y int, label string) RadioButton {
 	w, h := text.Measure(label, 16)
 
 	return RadioButton{
-		X:      x,
-		Y:      y,
-		Width:  int(w) + 10,
-		Height: int(h) + 10, // Add some padding
-		Label:  label,
-		op:     &ebiten.DrawImageOptions{},
+		ElementBase: ElementBase{
+			X:      x,
+			Y:      y,
+			Width:  int(w) + 10,
+			Height: int(h) + 10, // Add some padding
+			op:     &ebiten.DrawImageOptions{},
+		},
+		Label: label,
 	}
 }
 
@@ -53,15 +52,17 @@ func NewIconRadioButton(x int, y, iconX, iconY int, iconResource string, label s
 	w, h := text.Measure(label, 16)
 
 	b := &RadioButton{
-		X:            x,
-		Y:            y,
-		IconX:        iconX,
-		IconY:        iconY,
-		IconResource: iconResource,
-		Width:        int(w + 10 + 16),
-		Height:       int(h + 16),
-		Label:        label,
-		op:           &ebiten.DrawImageOptions{},
+		ElementBase: ElementBase{
+			X:            x,
+			Y:            y,
+			IconX:        iconX,
+			IconY:        iconY,
+			IconResource: iconResource,
+			Width:        int(w + 10 + 16),
+			Height:       int(h + 16),
+			op:           &ebiten.DrawImageOptions{},
+		},
+		Label: label,
 	}
 
 	return b
@@ -107,22 +108,4 @@ func (rb *RadioButton) Draw(screen *ebiten.Image, selected bool, parentX, parent
 	} else {
 		text.Draw(screen, rb.Label, 15, rb.X+5+parentX, rb.Y+5+parentY, color.White)
 	}
-}
-
-func (b *RadioButton) IsWithin(cX int, cY int, parentX, parentY int) bool {
-	if cX >= b.X+parentX && cX <= b.X+b.Width+parentX && cY >= b.Y+parentY && cY <= b.Height+b.Y+parentY {
-		return true
-	}
-	return false
-}
-
-func (b *RadioButton) IsClicked(parentX, parentY int) bool {
-	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-		cX, cY := ebiten.CursorPosition()
-
-		if cX >= b.X+parentX && cX <= b.X+b.Width+parentX && cY >= b.Y+parentY && cY <= b.Height+b.Y+parentY {
-			return true
-		}
-	}
-	return false
 }

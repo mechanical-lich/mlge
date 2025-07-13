@@ -11,31 +11,29 @@ import (
 )
 
 type InputField struct {
-	Name      string
-	X, Y      int
-	Width     int // in pixels
-	Height    int // in pixels
+	ElementBase
 	MaxLength int
 	Value     []rune
 	Cursor    int // index in Value
 	Focused   bool
-	op        *ebiten.DrawImageOptions // Options for drawing the input field background
 }
 
 func NewInputField(name string, x, y, width, maxLength int) *InputField {
 	// Generate string l
 	_, h := text.Measure("A", 16)
 	return &InputField{
-		Name:      name,
-		X:         x,
-		Y:         y,
-		Width:     width,
-		Height:    int(h + 10), // Add some padding
+		ElementBase: ElementBase{
+			Name:   name,
+			X:      x,
+			Y:      y,
+			Width:  width,
+			Height: int(h + 10), // Add some padding
+			op:     &ebiten.DrawImageOptions{},
+		},
 		MaxLength: maxLength,
 		Value:     []rune{},
 		Cursor:    0,
 		Focused:   false,
-		op:        &ebiten.DrawImageOptions{},
 	}
 }
 
@@ -117,10 +115,6 @@ func (f *InputField) Draw(screen *ebiten.Image, parentX, parentY int, theme *The
 		// Draw a simple vertical line as cursor
 		ebitenutil.DrawRect(screen, float64(cursorX), float64(f.Y+4+parentY), 2, 12, color.White)
 	}
-}
-
-func (f *InputField) IsWithin(cX, cY int, parentX, parentY int) bool {
-	return cX >= f.X+parentX && cX <= f.X+f.Width+parentX && cY >= f.Y+parentY && cY <= f.Y+16+parentY
 }
 
 func (f *InputField) SetValue(val string) {

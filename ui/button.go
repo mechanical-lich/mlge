@@ -4,36 +4,32 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/mechanical-lich/mlge/config"
 	"github.com/mechanical-lich/mlge/resource"
 	"github.com/mechanical-lich/mlge/text/v2"
 )
 
 type Button struct {
-	Name         string
-	X            int
-	Y            int
-	Width        int
-	Height       int
-	Text         string
-	IconX        int
-	IconY        int
-	IconResource string
-	op           *ebiten.DrawImageOptions
+	ElementBase
+	Text string
 }
 
 func NewButton(name string, x int, y int, txt string) *Button {
 	w, h := text.Measure(txt, 16)
 
 	b := &Button{
-		Name:   name,
-		X:      x,
-		Y:      y,
-		Width:  int(w + 10),
-		Height: int(h + 10),
-		Text:   txt,
-		op:     &ebiten.DrawImageOptions{},
+		ElementBase: ElementBase{
+			Name:         name,
+			X:            x,
+			Y:            y,
+			Width:        int(w + 10),
+			Height:       int(h + 10),
+			IconX:        0,
+			IconY:        0,
+			IconResource: "",
+			op:           &ebiten.DrawImageOptions{},
+		},
+		Text: txt,
 	}
 
 	return b
@@ -43,16 +39,18 @@ func NewIconButton(name string, x int, y, iconX, iconY int, iconResource string,
 	w, h := text.Measure(txt, 16)
 
 	b := &Button{
-		Name:         name,
-		X:            x,
-		Y:            y,
-		IconX:        iconX,
-		IconY:        iconY,
-		IconResource: iconResource,
-		Width:        int(w + 10 + 16),
-		Height:       int(h + 16),
-		Text:         txt,
-		op:           &ebiten.DrawImageOptions{},
+		ElementBase: ElementBase{
+			Name:         name,
+			X:            x,
+			Y:            y,
+			IconX:        iconX,
+			IconY:        iconY,
+			IconResource: iconResource,
+			Width:        int(w + 10 + 16),
+			Height:       int(h + 16),
+			op:           &ebiten.DrawImageOptions{},
+		},
+		Text: txt,
 	}
 
 	return b
@@ -82,33 +80,4 @@ func (b Button) Draw(screen *ebiten.Image, parentX, parentY int, theme *Theme) {
 	} else {
 		text.Draw(screen, b.Text, 15, b.X+5+parentX, b.Y+5+parentY, color.White)
 	}
-}
-
-func (b *Button) IsWithin(cX int, cY int, parentX, parentY int) bool {
-	if cX >= b.X+parentX && cX <= b.X+b.Width+parentX && cY >= b.Y+parentY && cY <= b.Height+b.Y+parentY {
-		return true
-	}
-	return false
-}
-
-func (b *Button) IsClicked(parentX, parentY int) bool {
-	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-		cX, cY := ebiten.CursorPosition()
-
-		if cX >= b.X+parentX && cX <= b.X+b.Width+parentX && cY >= b.Y+parentY && cY <= b.Height+b.Y+parentY {
-			return true
-		}
-	}
-	return false
-}
-
-func (b *Button) IsJustClicked(parentX, parentY int) bool {
-	if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
-		cX, cY := ebiten.CursorPosition()
-
-		if cX >= b.X+parentX && cX <= b.X+b.Width+parentX && cY >= b.Y+parentY && cY <= b.Height+b.Y+parentY {
-			return true
-		}
-	}
-	return false
 }
