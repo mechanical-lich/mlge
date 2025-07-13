@@ -16,6 +16,7 @@ type GUIViewInterface interface {
 	GetModalFocused() bool
 	GetPosition() (int, int)
 	SetPosition(x, y int)
+	WithinModalBounds(mouseX, mouseY int) bool
 }
 
 // GUIViewBase gives views some basic functionality when inherited.
@@ -138,6 +139,15 @@ func (g *GUIViewBase) GetInputFocused() bool {
 func (g *GUIViewBase) GetModalFocused() bool {
 	for _, modal := range g.Modals {
 		if modal.Visible {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *GUIViewBase) WithinModalBounds(mouseX, mouseY int) bool {
+	for _, modal := range g.Modals {
+		if modal.Visible && modal.WithinBounds(mouseX, mouseY) {
 			return true
 		}
 	}

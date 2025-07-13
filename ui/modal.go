@@ -35,7 +35,7 @@ func NewModal(name string, x, y, width, height int, initialView string, views ma
 		Y:           y,
 		Width:       width,
 		Height:      height,
-		Visible:     true,
+		Visible:     false,
 		CloseButton: closeBtn,
 		op:          &ebiten.DrawImageOptions{},
 	}
@@ -133,4 +133,8 @@ func (m *Modal) GetInputFocused() bool {
 		return v.GetInputFocused()
 	}
 	return false
+}
+
+func (m *Modal) WithinBounds(mouseX, mouseY int) bool {
+	return mouseX >= m.X && mouseX <= m.X+m.Width && mouseY >= m.Y && mouseY <= m.Y+m.Height
 }
