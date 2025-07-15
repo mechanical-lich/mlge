@@ -16,6 +16,13 @@ type EventListener interface {
 	HandleEvent(EventData) error
 }
 
+type EventManagerInterface interface {
+	RegisterListener(EventListener, EventType)
+	SendEvent(EventData)
+	UnregisterListener(EventListener, EventType)
+	UnregisterListenerFromAll(EventListener)
+}
+
 // EventManager - Entry point for registering event listeners and sending events
 type EventManager struct {
 	listeners map[EventType][]EventListener // Key is the event
