@@ -16,13 +16,13 @@ type RadioButton struct {
 
 type RadioGroup struct {
 	ElementBase
-	Buttons  []RadioButton
+	Buttons  []*RadioButton
 	Selected int
 }
 
-func NewRadioGroup(name string, buttons []RadioButton) *RadioGroup {
+func NewRadioGroup(name string, buttons []*RadioButton) *RadioGroup {
 	if buttons == nil {
-		buttons = make([]RadioButton, 0)
+		buttons = make([]*RadioButton, 0)
 	}
 	return &RadioGroup{
 		ElementBase: ElementBase{
@@ -33,10 +33,10 @@ func NewRadioGroup(name string, buttons []RadioButton) *RadioGroup {
 	}
 }
 
-func NewRadioButton(name string, x, y int, label string) RadioButton {
+func NewRadioButton(name string, x, y int, label string) *RadioButton {
 	w, h := text.Measure(label, 16)
 
-	return RadioButton{
+	return &RadioButton{
 		ElementBase: ElementBase{
 			Name:   name,
 			X:      x,
@@ -90,7 +90,7 @@ func (rg *RadioGroup) GetSelected() *RadioButton {
 	if rg.Selected < 0 || rg.Selected >= len(rg.Buttons) {
 		return nil
 	}
-	return &rg.Buttons[rg.Selected]
+	return rg.Buttons[rg.Selected]
 }
 
 func (rb *RadioButton) Draw(screen *ebiten.Image, selected bool, parentX, parentY int, theme *Theme) {
