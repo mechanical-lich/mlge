@@ -14,6 +14,8 @@ type GUIViewInterface interface {
 	DrawElements(screen *ebiten.Image, s state.StateInterface, theme *Theme)
 	GetInputFocused() bool
 	GetModalFocused() bool
+	OpenModal(name string)
+	CloseModal(name string)
 	GetPosition() (int, int)
 	SetPosition(x, y int)
 	WithinModalBounds(mouseX, mouseY int) bool
@@ -143,6 +145,20 @@ func (g *GUIViewBase) GetModalFocused() bool {
 		}
 	}
 	return false
+}
+
+// Opens a modal by name.  Does nothing if the modal does not exist.
+func (g *GUIViewBase) OpenModal(name string) {
+	if modal, exists := g.Modals[name]; exists {
+		modal.Visible = true
+	}
+}
+
+// Closes a modal by name.  Does nothing if the modal does not exist.
+func (g *GUIViewBase) CloseModal(name string) {
+	if modal, exists := g.Modals[name]; exists {
+		modal.Visible = false
+	}
 }
 
 func (g *GUIViewBase) WithinModalBounds(mouseX, mouseY int) bool {
