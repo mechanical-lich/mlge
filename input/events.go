@@ -6,12 +6,12 @@ import (
 )
 
 const (
-	MouseClickEventType event.EventType = iota
-	MouseReleasedEventType
-	MouseMoveEventType
-	MouseWheelEventType
-	KeyPressEventType
-	KeyReleaseEventType
+	MouseClickEventType    event.EventType = "MouseClick"
+	MouseReleasedEventType event.EventType = "MouseReleased"
+	MouseMoveEventType     event.EventType = "MouseMove"
+	MouseWheelEventType    event.EventType = "MouseWheel"
+	KeyPressEventType      event.EventType = "KeyPress"
+	KeyReleaseEventType    event.EventType = "KeyRelease"
 )
 
 // MouseClickEvent represents a mouse click event.

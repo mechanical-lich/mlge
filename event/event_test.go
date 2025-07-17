@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	Test EventType = iota
+	Test EventType = "test"
 )
 
 type TestEventData struct {

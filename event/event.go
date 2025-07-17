@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-type EventType int
+type EventType string
 
 // EventData - interface representing event data.  Each data struct needs to return its type as an EventType (int)
 type EventData interface {

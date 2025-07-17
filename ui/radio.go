@@ -33,11 +33,12 @@ func NewRadioGroup(name string, buttons []RadioButton) *RadioGroup {
 	}
 }
 
-func NewRadioButton(x, y int, label string) RadioButton {
+func NewRadioButton(name string, x, y int, label string) RadioButton {
 	w, h := text.Measure(label, 16)
 
 	return RadioButton{
 		ElementBase: ElementBase{
+			Name:   name,
 			X:      x,
 			Y:      y,
 			Width:  int(w) + 10,
@@ -48,11 +49,12 @@ func NewRadioButton(x, y int, label string) RadioButton {
 	}
 }
 
-func NewIconRadioButton(x int, y, iconX, iconY int, iconResource string, label string) *RadioButton {
+func NewIconRadioButton(name string, x int, y, iconX, iconY int, iconResource string, label string) *RadioButton {
 	w, h := text.Measure(label, 16)
 
 	b := &RadioButton{
 		ElementBase: ElementBase{
+			Name:         name,
 			X:            x,
 			Y:            y,
 			IconX:        iconX,
@@ -82,6 +84,13 @@ func (rg *RadioGroup) Draw(screen *ebiten.Image, parentX, parentY int, theme *Th
 		selected := (i == rg.Selected)
 		button.Draw(screen, selected, parentX, parentY, theme)
 	}
+}
+
+func (rg *RadioGroup) GetSelected() *RadioButton {
+	if rg.Selected < 0 || rg.Selected >= len(rg.Buttons) {
+		return nil
+	}
+	return &rg.Buttons[rg.Selected]
 }
 
 func (rb *RadioButton) Draw(screen *ebiten.Image, selected bool, parentX, parentY int, theme *Theme) {

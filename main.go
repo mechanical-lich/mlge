@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	Test event.EventType = iota
+	Test event.EventType = "test"
 )
 
 var m *event.QueuedEventManager
