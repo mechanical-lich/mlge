@@ -17,6 +17,9 @@ type ScrollingTextArea struct {
 	LineHeight   int
 	VisibleLines int
 	Lines        []string
+
+	draggingThumb bool
+	dragOffsetY   int
 }
 
 func NewScrollingTextArea(name string, x, y, width, height int, txt string) *ScrollingTextArea {
@@ -41,19 +44,83 @@ func NewScrollingTextArea(name string, x, y, width, height int, txt string) *Scr
 }
 
 func (s *ScrollingTextArea) Update(parentX, parentY int) {
-	// Simple mouse wheel scroll
-	xoff, _ := ebiten.Wheel()
-	if xoff != 0 {
-		s.ScrollOffset -= int(xoff)
-		if s.ScrollOffset < 0 {
-			s.ScrollOffset = 0
+	// Mouse position
+	mx, my := ebiten.CursorPosition()
+	mx -= parentX
+	my -= parentY
+
+	barX := s.X + s.Width - 12 + parentX
+	barY := s.Y + 4 + parentY
+	barW := 32
+	barH := s.Height - 8
+
+	// Thumb calculations
+	totalLines := len(s.Lines)
+	if totalLines <= s.VisibleLines {
+		s.draggingThumb = false
+		return
+	}
+	thumbH := int(math.Max(float64(barH*s.VisibleLines/totalLines), 16))
+	maxThumbY := barY + barH - thumbH
+	thumbY := barY
+	if totalLines > s.VisibleLines {
+		thumbY = barY + (barH-thumbH)*s.ScrollOffset/(totalLines-s.VisibleLines)
+	}
+
+	left := barX
+	right := barX + barW
+	top := thumbY
+	bottom := thumbY + thumbH
+
+	// Mouse input
+	mousePressed := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
+	//	mouseJustPressed := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) && !s.draggingThumb
+	mouseJustReleased := !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) && s.draggingThumb
+
+	if s.draggingThumb {
+		if mouseJustReleased {
+			s.draggingThumb = false
+		} else if mousePressed {
+			// Calculate new thumb position
+			newThumbY := my - s.dragOffsetY
+			if newThumbY < barY {
+				newThumbY = barY
+			}
+			if newThumbY > maxThumbY {
+				newThumbY = maxThumbY
+			}
+			// Map thumb position to scroll offset
+			scrollRange := barH - thumbH
+			if scrollRange > 0 {
+				s.ScrollOffset = int(float64(newThumbY-barY) / float64(scrollRange) * float64(totalLines-s.VisibleLines))
+			}
+			if s.ScrollOffset < 0 {
+				s.ScrollOffset = 0
+			}
+			if s.ScrollOffset > totalLines-s.VisibleLines {
+				s.ScrollOffset = totalLines - s.VisibleLines
+			}
 		}
-		maxOffset := len(s.Lines) - s.VisibleLines
-		if maxOffset < 0 {
-			maxOffset = 0
-		}
-		if s.ScrollOffset > maxOffset {
-			s.ScrollOffset = maxOffset
+	} else if mousePressed && mx >= left && mx < right && my >= top && my < bottom {
+		s.draggingThumb = true
+		s.dragOffsetY = my - thumbY
+	}
+
+	// Mouse wheel scroll (only if not dragging)
+	if !s.draggingThumb {
+		_, yoff := ebiten.Wheel()
+		if yoff != 0 {
+			s.ScrollOffset -= int(yoff)
+			if s.ScrollOffset < 0 {
+				s.ScrollOffset = 0
+			}
+			maxOffset := totalLines - s.VisibleLines
+			if maxOffset < 0 {
+				maxOffset = 0
+			}
+			if s.ScrollOffset > maxOffset {
+				s.ScrollOffset = maxOffset
+			}
 		}
 	}
 }
@@ -102,22 +169,33 @@ func (s *ScrollingTextArea) Draw(screen *ebiten.Image, parentX, parentY int, the
 func (s *ScrollingTextArea) drawScrollbar(screen *ebiten.Image, parentX, parentY int, theme *Theme) {
 	barX := s.X + s.Width - 12 + parentX
 	barY := s.Y + 4 + parentY
-	barW := 8
+	barW := 32
 	barH := s.Height - 8
 
-	// Draw scrollbar background (9-slice not needed for thin bar)
-	barBg := resource.GetSubImage("ui", 96, 48, 16, 48)
+	totalLines := len(s.Lines)
+	if totalLines <= s.VisibleLines {
+		return
+	}
+
+	// Draw scrollbar background
+	barBg := resource.GetSubImage("ui", theme.ScrollingTextArea.ScrollBarX, theme.ScrollingTextArea.ScrollBarY, theme.ScrollingTextArea.ScrollBarWidth, theme.ScrollingTextArea.ScrollBarHeight)
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Scale(float64(barW)/16.0, float64(barH)/48.0)
 	op.GeoM.Translate(float64(barX), float64(barY))
 	screen.DrawImage(barBg, op)
 
 	// Draw thumb
-	thumbH := int(math.Max(float64(barH*s.VisibleLines/len(s.Lines)), 16))
-	thumbY := barY + (barH-thumbH)*s.ScrollOffset/(len(s.Lines)-s.VisibleLines)
-	thumb := resource.GetSubImage("ui", 112, 48, 8, 16)
+	thumbH := int(math.Max(float64(barH*s.VisibleLines/totalLines), 16))
+	scrollRange := barH - thumbH
+	var thumbY int
+	if totalLines > s.VisibleLines && scrollRange > 0 {
+		thumbY = barY + (scrollRange*s.ScrollOffset)/(totalLines-s.VisibleLines)
+	} else {
+		thumbY = barY
+	}
+	thumb := resource.GetSubImage("ui", theme.ScrollingTextArea.ThumbX, theme.ScrollingTextArea.ThumbY, theme.ScrollingTextArea.ThumbWidth, theme.ScrollingTextArea.ThumbHeight)
 	op2 := &ebiten.DrawImageOptions{}
-	op2.GeoM.Scale(float64(barW)/8.0, float64(thumbH)/16.0)
+	op2.GeoM.Scale(float64(barW)/16.0, float64(thumbH)/16.0)
 	op2.GeoM.Translate(float64(barX), float64(thumbY))
 	screen.DrawImage(thumb, op2)
 }

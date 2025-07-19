@@ -102,7 +102,7 @@ var DefaultTheme = Theme{
 		ScrollBarHeight: 48,
 		ThumbX:          112,
 		ThumbY:          48,
-		ThumbWidth:      8,
+		ThumbWidth:      16,
 		ThumbHeight:     16,
 	},
 }
