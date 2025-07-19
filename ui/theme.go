@@ -31,7 +31,20 @@ type Theme struct {
 		Width  int
 		Height int
 	}
-	// Add more as needed
+	ScrollingTextArea struct {
+		SrcX            int
+		SrcY            int
+		TileSize        int
+		TileScale       int
+		ScrollBarX      int
+		ScrollBarY      int
+		ScrollBarWidth  int
+		ScrollBarHeight int
+		ThumbX          int // Add for thumb sprite
+		ThumbY          int
+		ThumbWidth      int
+		ThumbHeight     int
+	}
 }
 
 var DefaultTheme = Theme{
@@ -65,4 +78,31 @@ var DefaultTheme = Theme{
 		Width  int
 		Height int
 	}{SrcX: 16, SrcY: 80, Width: 48, Height: 16},
+	ScrollingTextArea: struct {
+		SrcX            int
+		SrcY            int
+		TileSize        int
+		TileScale       int
+		ScrollBarX      int
+		ScrollBarY      int
+		ScrollBarWidth  int
+		ScrollBarHeight int
+		ThumbX          int
+		ThumbY          int
+		ThumbWidth      int
+		ThumbHeight     int
+	}{
+		SrcX:            192,
+		SrcY:            0,
+		TileSize:        16,
+		TileScale:       2,
+		ScrollBarX:      96,
+		ScrollBarY:      48,
+		ScrollBarWidth:  16,
+		ScrollBarHeight: 48,
+		ThumbX:          112,
+		ThumbY:          48,
+		ThumbWidth:      8,
+		ThumbHeight:     16,
+	},
 }

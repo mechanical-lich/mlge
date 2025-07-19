@@ -23,12 +23,13 @@ type GUIViewInterface interface {
 
 // GUIViewBase gives views some basic functionality when inherited.
 type GUIViewBase struct {
-	Buttons     map[string]*Button
-	RadioGroups map[string]*RadioGroup
-	Toggles     map[string]*Toggle
-	Inputs      map[string]*InputField
-	Modals      map[string]*Modal
-	X, Y        int // Add offset for the view
+	Buttons            map[string]*Button
+	RadioGroups        map[string]*RadioGroup
+	Toggles            map[string]*Toggle
+	Inputs             map[string]*InputField
+	Modals             map[string]*Modal
+	ScrollingTextAreas map[string]*ScrollingTextArea
+	X, Y               int // Add offset for the view
 }
 
 func (g *GUIViewBase) GetPosition() (int, int) {
@@ -76,6 +77,13 @@ func (g *GUIViewBase) AddModal(modal *Modal) {
 	g.Modals[modal.Name] = modal
 }
 
+func (g *GUIViewBase) AddScrollingTextArea(area *ScrollingTextArea) {
+	if g.ScrollingTextAreas == nil {
+		g.ScrollingTextAreas = make(map[string]*ScrollingTextArea, 0)
+	}
+	g.ScrollingTextAreas[area.Name] = area
+}
+
 func (g *GUIViewBase) UpdateElements(s state.StateInterface) {
 	for _, group := range g.RadioGroups {
 		group.Update(g.X, g.Y)
@@ -91,6 +99,10 @@ func (g *GUIViewBase) UpdateElements(s state.StateInterface) {
 
 	for _, modal := range g.Modals {
 		modal.Update(s)
+	}
+
+	for _, area := range g.ScrollingTextAreas {
+		area.Update(g.X, g.Y)
 	}
 }
 
@@ -120,6 +132,11 @@ func (g *GUIViewBase) DrawElements(screen *ebiten.Image, s state.StateInterface,
 		if modal.Visible {
 			modal.Draw(screen, s, theme)
 		}
+	}
+
+	// Draw scrolling text areas
+	for _, area := range g.ScrollingTextAreas {
+		area.Draw(screen, g.X, g.Y, theme)
 	}
 }
 
