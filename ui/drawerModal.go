@@ -9,34 +9,53 @@ import (
 type DrawSide string
 
 const (
-	DrawSideLeft  DrawSide = "left"
-	DrawSideRight DrawSide = "right"
+	DrawSideLeft   DrawSide = "left"
+	DrawSideRight  DrawSide = "right"
+	DrawSideTop    DrawSide = "top"
+	DrawSideBottom DrawSide = "bottom"
 )
 
-// DrawerModal is a modal that slides in/out from the left or right edge of the screen.
+// DrawerModal is a modal that slides in/out from the left, right, top, or bottom edge of the screen.
+// Now supports positioning along the axis it is anchored to (Y for left/right, X for top/bottom).
 type DrawerModal struct {
 	ElementBase
 
 	Views       map[string]GUIViewInterface
 	CurrentView string
 
-	Side       DrawSide // "left" or "right"
+	Side       DrawSide // "left", "right", "top", or "bottom"
 	Open       bool
 	SlideSpeed int // pixels per frame
 
 	offset       int // current slide offset (in px)
-	targetOffset int // where the drawer should be (0=open, -Width or +Width=closed)
+	targetOffset int // where the drawer should be (0=open, -Width/-Height or +Width/+Height=closed)
 	bg           *ebiten.Image
 	OnClose      func()
+
+	CloseButton *Button
 }
 
 // NewDrawerModal creates a new DrawerModal.
-func NewDrawerModal(name string, side DrawSide, width, height, slideSpeed int, initialView string, views map[string]GUIViewInterface) *DrawerModal {
+// x and y are now respected as the position along the axis the drawer is anchored to.
+func NewDrawerModal(name string, side DrawSide, x, y, width, height, slideSpeed int, initialView string, views map[string]GUIViewInterface) *DrawerModal {
+	var closeBtn *Button
+	switch side {
+	case DrawSideLeft:
+		closeBtn = NewButton("close", width-24, 8, "X")
+	case DrawSideRight:
+		closeBtn = NewButton("close", 8, 8, "X")
+	case DrawSideTop:
+		closeBtn = NewButton("close", width-24, 8, "X")
+	case DrawSideBottom:
+		closeBtn = NewButton("close", width-24, 8, "X")
+	default:
+		closeBtn = NewButton("close", width-24, 8, "X")
+	}
 	d := &DrawerModal{
 		ElementBase: ElementBase{
 			Name:    name,
-			X:       0,
-			Y:       0,
+			X:       x,
+			Y:       y,
 			Width:   width,
 			Height:  height,
 			Visible: false,
@@ -47,17 +66,29 @@ func NewDrawerModal(name string, side DrawSide, width, height, slideSpeed int, i
 		Side:        side,
 		Open:        false,
 		SlideSpeed:  slideSpeed,
+		CloseButton: closeBtn,
 	}
-	if side == DrawSideLeft {
+	switch side {
+	case DrawSideLeft:
 		d.offset = -width
 		d.targetOffset = -width
-		d.X = 0
-	} else {
+		// d.X = 0 // X is always 0 for left, Y is set by user
+	case DrawSideRight:
 		d.offset = getScreenWidth()
 		d.targetOffset = getScreenWidth()
-		d.X = getScreenWidth() - width
+		d.X = getScreenWidth() - width // X is always right edge, Y is set by user
+	case DrawSideTop:
+		d.offset = -height
+		d.targetOffset = -height
+		// d.Y = 0 // Y is always 0 for top, X is set by user
+	case DrawSideBottom:
+		d.offset = getScreenHeight()
+		d.targetOffset = getScreenHeight()
+		d.Y = getScreenHeight() - height // Y is always bottom edge, X is set by user
+	default:
+		d.offset = -width
+		d.targetOffset = -width
 	}
-	d.Y = 0
 	return d
 }
 
@@ -71,17 +102,30 @@ func (d *DrawerModal) SetView(name string) {
 // SetOpen opens or closes the drawer.
 func (d *DrawerModal) SetOpen(open bool) {
 	d.Open = open
-	if d.Side == DrawSideLeft {
+	switch d.Side {
+	case DrawSideLeft:
 		if open {
 			d.targetOffset = 0
 		} else {
 			d.targetOffset = -d.Width
 		}
-	} else {
+	case DrawSideRight:
 		if open {
 			d.targetOffset = getScreenWidth() - d.Width
 		} else {
 			d.targetOffset = getScreenWidth()
+		}
+	case DrawSideTop:
+		if open {
+			d.targetOffset = 0
+		} else {
+			d.targetOffset = -d.Height
+		}
+	case DrawSideBottom:
+		if open {
+			d.targetOffset = getScreenHeight() - d.Height
+		} else {
+			d.targetOffset = getScreenHeight()
 		}
 	}
 	d.Visible = open || d.offset != d.targetOffset // keep drawing while animating
@@ -111,13 +155,35 @@ func (d *DrawerModal) Update(s state.StateInterface) {
 		d.Visible = false
 	}
 
+	// Update close button position based on side and offset
+	switch d.Side {
+	case DrawSideLeft:
+		d.CloseButton.SetPosition(d.offset+d.Width-24, d.Y+8)
+	case DrawSideRight:
+		d.CloseButton.SetPosition(d.offset+8, d.Y+8)
+	case DrawSideTop:
+		d.CloseButton.SetPosition(d.X+d.Width-24, d.offset+8)
+	case DrawSideBottom:
+		d.CloseButton.SetPosition(d.X+d.Width-24, d.offset+8)
+	}
+
+	// Handle close button click
+	if d.CloseButton.IsJustClicked(0, 0) {
+		d.SetOpen(false)
+		if d.OnClose != nil {
+			d.OnClose()
+		}
+		return
+	}
+
 	// Only update view if visible
 	if d.Visible {
 		if v, ok := d.Views[d.CurrentView]; ok {
-			if d.Side == DrawSideLeft {
+			switch d.Side {
+			case DrawSideLeft, DrawSideRight:
 				v.SetPosition(d.offset, d.Y)
-			} else {
-				v.SetPosition(d.offset, d.Y)
+			case DrawSideTop, DrawSideBottom:
+				v.SetPosition(d.X, d.offset)
 			}
 			v.UpdateElements(s)
 			v.Update(s)
@@ -137,12 +203,25 @@ func (d *DrawerModal) Draw(screen *ebiten.Image, s state.StateInterface, theme *
 	}
 	// Draw the drawer background
 	d.op.GeoM.Reset()
-	d.op.GeoM.Translate(float64(d.offset), float64(d.Y))
+	switch d.Side {
+	case DrawSideLeft, DrawSideRight:
+		d.op.GeoM.Translate(float64(d.offset), float64(d.Y))
+	case DrawSideTop, DrawSideBottom:
+		d.op.GeoM.Translate(float64(d.X), float64(d.offset))
+	}
 	screen.DrawImage(d.bg, d.op)
+
+	// Draw close button
+	d.CloseButton.Draw(screen, 0, 0, theme)
 
 	// Draw current view
 	if v, ok := d.Views[d.CurrentView]; ok {
-		v.SetPosition(d.offset, d.Y)
+		switch d.Side {
+		case DrawSideLeft, DrawSideRight:
+			v.SetPosition(d.offset, d.Y)
+		case DrawSideTop, DrawSideBottom:
+			v.SetPosition(d.X, d.offset)
+		}
 		v.Draw(screen, s, theme)
 		v.DrawElements(screen, s, theme)
 	}
@@ -156,13 +235,26 @@ func (d *DrawerModal) GetInputFocused() bool {
 	return false
 }
 
+// WithinBounds checks if a point is within the drawer, respecting axis anchoring.
 func (d *DrawerModal) WithinBounds(mouseX, mouseY int) bool {
-	return mouseX >= d.offset && mouseX <= d.offset+d.Width && mouseY >= d.Y && mouseY <= d.Y+d.Height
+	switch d.Side {
+	case DrawSideLeft, DrawSideRight:
+		return mouseX >= d.offset && mouseX <= d.offset+d.Width && mouseY >= d.Y && mouseY <= d.Y+d.Height
+	case DrawSideTop, DrawSideBottom:
+		return mouseX >= d.X && mouseX <= d.X+d.Width && mouseY >= d.offset && mouseY <= d.offset+d.Height
+	default:
+		return false
+	}
 }
 
 func getScreenWidth() int {
 	w, _ := ebiten.WindowSize()
 	return w
+}
+
+func getScreenHeight() int {
+	_, h := ebiten.WindowSize()
+	return h
 }
 
 func (d *DrawerModal) GetName() string {
