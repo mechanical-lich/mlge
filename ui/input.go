@@ -15,7 +15,6 @@ type InputField struct {
 	MaxLength int
 	Value     []rune
 	Cursor    int // index in Value
-	Focused   bool
 }
 
 func NewInputField(name string, x, y, width, maxLength int) *InputField {
@@ -33,7 +32,6 @@ func NewInputField(name string, x, y, width, maxLength int) *InputField {
 		MaxLength: maxLength,
 		Value:     []rune{},
 		Cursor:    0,
-		Focused:   false,
 	}
 }
 

@@ -20,7 +20,6 @@ type ScrollingTextArea struct {
 
 	draggingThumb bool
 	dragOffsetY   int
-	Focused       bool
 }
 
 func NewScrollingTextArea(name string, x, y, width, height int, txt string) *ScrollingTextArea {

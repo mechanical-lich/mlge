@@ -56,6 +56,9 @@ func NewIconButton(name string, x int, y, iconX, iconY int, iconResource string,
 	return b
 }
 
+func (b *Button) Update(parentX, parentY int) {
+}
+
 func (b *Button) Draw(screen *ebiten.Image, parentX, parentY int, theme *Theme) {
 	b.op.GeoM.Reset()
 	b.op.GeoM.Scale(float64(b.Width)/float64(theme.Button.Width), float64(b.Height)/float64(theme.Button.Height))

@@ -24,13 +24,15 @@ type GUIViewInterface interface {
 
 // GUIViewBase gives views some basic functionality when inherited.
 type GUIViewBase struct {
-	Buttons            map[string]*Button
-	RadioGroups        map[string]*RadioGroup
-	Toggles            map[string]*Toggle
-	Inputs             map[string]*InputField
-	Modals             map[string]ModalInterface
-	ScrollingTextAreas map[string]*ScrollingTextArea
-	X, Y               int // Add offset for the view
+	Elements map[string]ElementInterface
+	Modals   map[string]ModalInterface
+	X, Y     int // Add offset for the view
+}
+
+func (g *GUIViewBase) initElements() {
+	if g.Elements == nil {
+		g.Elements = make(map[string]ElementInterface, 0)
+	}
 }
 
 func (g *GUIViewBase) GetPosition() (int, int) {
@@ -42,32 +44,9 @@ func (g *GUIViewBase) SetPosition(x, y int) {
 	g.Y = y
 }
 
-func (g *GUIViewBase) AddButton(button *Button) {
-	if g.Buttons == nil {
-		g.Buttons = make(map[string]*Button, 0)
-	}
-	g.Buttons[button.Name] = button
-}
-
-func (g *GUIViewBase) AddRadioGroup(group *RadioGroup) {
-	if g.RadioGroups == nil {
-		g.RadioGroups = make(map[string]*RadioGroup, 0)
-	}
-	g.RadioGroups[group.Name] = group
-}
-
-func (g *GUIViewBase) AddToggle(toggle *Toggle) {
-	if g.Toggles == nil {
-		g.Toggles = make(map[string]*Toggle, 0)
-	}
-	g.Toggles[toggle.Name] = toggle
-}
-
-func (g *GUIViewBase) AddInputField(input *InputField) {
-	if g.Inputs == nil {
-		g.Inputs = make(map[string]*InputField, 0)
-	}
-	g.Inputs[input.Name] = input
+func (g *GUIViewBase) AddElement(element ElementInterface) {
+	g.initElements()
+	g.Elements[element.GetName()] = element
 }
 
 func (g *GUIViewBase) AddModal(modal ModalInterface) {
@@ -78,54 +57,21 @@ func (g *GUIViewBase) AddModal(modal ModalInterface) {
 	g.Modals[modal.GetName()] = modal
 }
 
-func (g *GUIViewBase) AddScrollingTextArea(area *ScrollingTextArea) {
-	if g.ScrollingTextAreas == nil {
-		g.ScrollingTextAreas = make(map[string]*ScrollingTextArea, 0)
-	}
-	g.ScrollingTextAreas[area.Name] = area
-}
-
 func (g *GUIViewBase) UpdateElements(s state.StateInterface) {
-	for _, group := range g.RadioGroups {
-		group.Update(g.X, g.Y)
-	}
-
-	for _, toggle := range g.Toggles {
-		toggle.Update(g.X, g.Y)
-	}
-
-	for _, input := range g.Inputs {
-		input.Update(g.X, g.Y)
+	for _, element := range g.Elements {
+		element.Update(g.X, g.Y)
 	}
 
 	for _, modal := range g.Modals {
 		modal.Update(s)
 	}
 
-	for _, area := range g.ScrollingTextAreas {
-		area.Update(g.X, g.Y)
-	}
 }
 
 func (g *GUIViewBase) DrawElements(screen *ebiten.Image, s state.StateInterface, theme *Theme) {
 	// Draw buttons
-	for _, b := range g.Buttons {
-		b.Draw(screen, g.X, g.Y, theme)
-	}
-
-	// Draw radio groups
-	for _, rg := range g.RadioGroups {
-		rg.Draw(screen, g.X, g.Y, theme)
-	}
-
-	// Draw toggles
-	for _, t := range g.Toggles {
-		t.Draw(screen, g.X, g.Y, theme)
-	}
-
-	// Draw input fields
-	for _, input := range g.Inputs {
-		input.Draw(screen, g.X, g.Y, theme)
+	for _, e := range g.Elements {
+		e.Draw(screen, g.X, g.Y, theme)
 	}
 
 	// Draw modals
@@ -135,15 +81,11 @@ func (g *GUIViewBase) DrawElements(screen *ebiten.Image, s state.StateInterface,
 		}
 	}
 
-	// Draw scrolling text areas
-	for _, area := range g.ScrollingTextAreas {
-		area.Draw(screen, g.X, g.Y, theme)
-	}
 }
 
 func (g *GUIViewBase) GetInputFocused() bool {
-	for _, input := range g.Inputs {
-		if input.Focused {
+	for _, e := range g.Elements {
+		if e.GetFocused() {
 			return true
 		}
 	}
@@ -154,17 +96,12 @@ func (g *GUIViewBase) GetInputFocused() bool {
 		}
 	}
 
-	for _, area := range g.ScrollingTextAreas {
-		if area.Focused {
-			return true
-		}
-	}
 	return false
 }
 
 func (g *GUIViewBase) GetMouseFocused() bool {
-	for _, area := range g.ScrollingTextAreas {
-		if area.Focused {
+	for _, e := range g.Elements {
+		if e.GetFocused() {
 			return true
 		}
 	}
