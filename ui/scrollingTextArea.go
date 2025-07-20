@@ -20,6 +20,7 @@ type ScrollingTextArea struct {
 
 	draggingThumb bool
 	dragOffsetY   int
+	Focused       bool
 }
 
 func NewScrollingTextArea(name string, x, y, width, height int, txt string) *ScrollingTextArea {
@@ -46,6 +47,7 @@ func NewScrollingTextArea(name string, x, y, width, height int, txt string) *Scr
 func (s *ScrollingTextArea) Update(parentX, parentY int) {
 	// Mouse position
 	mx, my := ebiten.CursorPosition()
+	s.Focused = s.IsWithin(mx, my, parentX, parentY)
 	mx -= parentX
 	my -= parentY
 
@@ -107,7 +109,8 @@ func (s *ScrollingTextArea) Update(parentX, parentY int) {
 	}
 
 	// Mouse wheel scroll (only if not dragging)
-	if !s.draggingThumb {
+
+	if !s.draggingThumb && s.Focused {
 		_, yoff := ebiten.Wheel()
 		if yoff != 0 {
 			s.ScrollOffset -= int(yoff)

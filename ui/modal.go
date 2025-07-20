@@ -6,6 +6,21 @@ import (
 	"github.com/mechanical-lich/mlge/utility"
 )
 
+type ModalInterface interface {
+	SetView(name string)
+	Update(s state.StateInterface)
+	Draw(screen *ebiten.Image, s state.StateInterface, theme *Theme)
+	GetInputFocused() bool
+	WithinBounds(mouseX, mouseY int) bool
+	GetName() string
+	GetPosition() (int, int)
+	SetPosition(x, y int)
+	OpenModal()
+	CloseModal()
+	IsOpen() bool
+	IsVisible() bool
+}
+
 // Modal wraps a view and provides modal behavior with a close button and view states.
 type Modal struct {
 	ElementBase
@@ -54,7 +69,7 @@ func (m *Modal) Update(s state.StateInterface) {
 		return
 	}
 
-	m.HandleDragging()
+	m.handleDragging()
 
 	if m.CloseButton.IsJustClicked(m.X, m.Y) && !m.dragging {
 		m.Visible = false
@@ -70,7 +85,7 @@ func (m *Modal) Update(s state.StateInterface) {
 	}
 }
 
-func (m *Modal) HandleDragging() {
+func (m *Modal) handleDragging() {
 	// Get mouse position and button state
 	if !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		m.dragging = false
@@ -108,7 +123,7 @@ func (m *Modal) Draw(screen *ebiten.Image, s state.StateInterface, theme *Theme)
 		return
 	}
 
-	if m.bg == nil {
+	if m.bg == nil || m.bg.Bounds().Dx() != m.Width || m.bg.Bounds().Dy() != m.Height {
 		m.bg = ebiten.NewImage(m.Width, m.Height)
 		utility.Draw9Slice(m.bg, 0, 0, m.Width, m.Height, theme.ModalNineSlice.SrcX, theme.ModalNineSlice.SrcY, theme.ModalNineSlice.TileSize, theme.ModalNineSlice.TileScale)
 	}
@@ -120,7 +135,6 @@ func (m *Modal) Draw(screen *ebiten.Image, s state.StateInterface, theme *Theme)
 	m.CloseButton.Draw(screen, m.X, m.Y, theme)
 
 	if v, ok := m.Views[m.CurrentView]; ok {
-		// If the view is a GUIViewBase, set its X/Y to modal's X/Y
 		v.SetPosition(m.X, m.Y)
 		v.Draw(screen, s, theme)
 		v.DrawElements(screen, s, theme)
@@ -137,4 +151,36 @@ func (m *Modal) GetInputFocused() bool {
 
 func (m *Modal) WithinBounds(mouseX, mouseY int) bool {
 	return mouseX >= m.X && mouseX <= m.X+m.Width && mouseY >= m.Y && mouseY <= m.Y+m.Height
+}
+
+func (m *Modal) GetName() string {
+	return m.Name
+}
+
+func (m *Modal) GetPosition() (int, int) {
+	return m.X, m.Y
+}
+
+func (m *Modal) SetPosition(x, y int) {
+	m.X = x
+	m.Y = y
+}
+
+func (m *Modal) OpenModal() {
+	m.Visible = true
+}
+
+func (m *Modal) CloseModal() {
+	m.Visible = false
+	if m.OnClose != nil {
+		m.OnClose()
+	}
+}
+
+func (m *Modal) IsOpen() bool {
+	return m.Visible
+}
+
+func (m *Modal) IsVisible() bool {
+	return m.Visible
 }

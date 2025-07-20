@@ -19,6 +19,7 @@ type GUIViewInterface interface {
 	GetPosition() (int, int)
 	SetPosition(x, y int)
 	WithinModalBounds(mouseX, mouseY int) bool
+	GetMouseFocused() bool
 }
 
 // GUIViewBase gives views some basic functionality when inherited.
@@ -27,7 +28,7 @@ type GUIViewBase struct {
 	RadioGroups        map[string]*RadioGroup
 	Toggles            map[string]*Toggle
 	Inputs             map[string]*InputField
-	Modals             map[string]*Modal
+	Modals             map[string]ModalInterface
 	ScrollingTextAreas map[string]*ScrollingTextArea
 	X, Y               int // Add offset for the view
 }
@@ -69,12 +70,12 @@ func (g *GUIViewBase) AddInputField(input *InputField) {
 	g.Inputs[input.Name] = input
 }
 
-func (g *GUIViewBase) AddModal(modal *Modal) {
+func (g *GUIViewBase) AddModal(modal ModalInterface) {
 	if g.Modals == nil {
-		g.Modals = make(map[string]*Modal)
+		g.Modals = make(map[string]ModalInterface)
 	}
 
-	g.Modals[modal.Name] = modal
+	g.Modals[modal.GetName()] = modal
 }
 
 func (g *GUIViewBase) AddScrollingTextArea(area *ScrollingTextArea) {
@@ -129,7 +130,7 @@ func (g *GUIViewBase) DrawElements(screen *ebiten.Image, s state.StateInterface,
 
 	// Draw modals
 	for _, modal := range g.Modals {
-		if modal.Visible {
+		if modal.IsVisible() {
 			modal.Draw(screen, s, theme)
 		}
 	}
@@ -148,7 +149,22 @@ func (g *GUIViewBase) GetInputFocused() bool {
 	}
 
 	for _, modal := range g.Modals {
-		if modal.Visible && modal.GetInputFocused() {
+		if modal.IsOpen() && modal.GetInputFocused() {
+			return true
+		}
+	}
+
+	for _, area := range g.ScrollingTextAreas {
+		if area.Focused {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *GUIViewBase) GetMouseFocused() bool {
+	for _, area := range g.ScrollingTextAreas {
+		if area.Focused {
 			return true
 		}
 	}
@@ -157,7 +173,7 @@ func (g *GUIViewBase) GetInputFocused() bool {
 
 func (g *GUIViewBase) GetModalFocused() bool {
 	for _, modal := range g.Modals {
-		if modal.Visible {
+		if modal.IsVisible() {
 			return true
 		}
 	}
@@ -167,20 +183,20 @@ func (g *GUIViewBase) GetModalFocused() bool {
 // Opens a modal by name.  Does nothing if the modal does not exist.
 func (g *GUIViewBase) OpenModal(name string) {
 	if modal, exists := g.Modals[name]; exists {
-		modal.Visible = true
+		modal.OpenModal()
 	}
 }
 
 // Closes a modal by name.  Does nothing if the modal does not exist.
 func (g *GUIViewBase) CloseModal(name string) {
 	if modal, exists := g.Modals[name]; exists {
-		modal.Visible = false
+		modal.CloseModal()
 	}
 }
 
 func (g *GUIViewBase) WithinModalBounds(mouseX, mouseY int) bool {
 	for _, modal := range g.Modals {
-		if modal.Visible && modal.WithinBounds(mouseX, mouseY) {
+		if modal.IsVisible() && modal.WithinBounds(mouseX, mouseY) {
 			return true
 		}
 	}
