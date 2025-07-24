@@ -22,6 +22,7 @@ const DigAction TaskAction = "dig"                        // Digs up a tile if p
 type Task struct {
 	X          int
 	Y          int
+	Z          int
 	Action     TaskAction
 	Data       any
 	Escalated  bool
@@ -44,7 +45,7 @@ func (t *Task) Stop() {
 
 // Mark a task as complete.  Completed tasks get automatically cleaned up.
 func (t *Task) Complete() {
-	log.Printf("Task to %s completed at %s at [%d,%d]", t.Action, t.Created.String(), t.X, t.Y)
+	log.Printf("Task to %s completed at %s at [%d,%d,%d]", t.Action, t.Created.String(), t.X, t.Y, t.Z)
 	t.Completed = true
 }
 
@@ -113,8 +114,8 @@ func (ts *TaskScheduler) GetNextTask(allowed_tasks ...TaskAction) *Task {
 	return t
 }
 
-func (ts *TaskScheduler) GetClosestNextTask(x, y int, allowed_tasks ...TaskAction) *Task {
-	t := ts.PeekClosestNextTask(x, y, allowed_tasks...)
+func (ts *TaskScheduler) GetClosestNextTask(x, y, z int, allowed_tasks ...TaskAction) *Task {
+	t := ts.PeekClosestNextTask(x, y, z, allowed_tasks...)
 	if t != nil {
 		t.Start()
 	}
@@ -122,7 +123,7 @@ func (ts *TaskScheduler) GetClosestNextTask(x, y int, allowed_tasks ...TaskActio
 	return t
 }
 
-func (ts *TaskScheduler) PeekClosestNextTask(x, y int, allowed_tasks ...TaskAction) *Task {
+func (ts *TaskScheduler) PeekClosestNextTask(x, y, z int, allowed_tasks ...TaskAction) *Task {
 	ts.SortTasks()
 	if len(ts.tasks) == 0 {
 		return nil
@@ -136,7 +137,7 @@ func (ts *TaskScheduler) PeekClosestNextTask(x, y int, allowed_tasks ...TaskActi
 			!task.Completed && !task.InProgress {
 
 			// Manhattan distance
-			dist := utility.Abs(task.X-x) + utility.Abs(task.Y-y)
+			dist := utility.Abs(task.X-x) + utility.Abs(task.Y-y) + utility.Abs(task.Z-z)
 
 			// If this task is closer, or if it's the same distance but higher priority (earlier in sorted list)
 			if closestTask == nil || dist < minDist {
