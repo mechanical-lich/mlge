@@ -1,7 +1,6 @@
 package task
 
 import (
-	"log"
 	"slices"
 	"sort"
 	"time"
@@ -18,6 +17,8 @@ const AggressiveMoveAction TaskAction = "aggressive_move" // Move to location bu
 const AttackAction TaskAction = "attack"                  // Attack whatever is in square if possible (moves to it)
 const BuildAction TaskAction = "build"                    // Build at tile
 const DigAction TaskAction = "dig"                        // Digs up a tile if possible.
+const HuntAction TaskAction = "hunt"                      // Hunt for food
+const ButcherAction TaskAction = "butcher"                // Butcher an animal
 
 type Task struct {
 	X          int
@@ -45,7 +46,7 @@ func (t *Task) Stop() {
 
 // Mark a task as complete.  Completed tasks get automatically cleaned up.
 func (t *Task) Complete() {
-	log.Printf("Task to %s completed at %s at [%d,%d,%d]", t.Action, t.Created.String(), t.X, t.Y, t.Z)
+	//log.Printf("Task to %s completed at %s at [%d,%d,%d]", t.Action, t.Created.String(), t.X, t.Y, t.Z)
 	t.Completed = true
 }
 
