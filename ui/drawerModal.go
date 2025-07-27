@@ -41,15 +41,15 @@ func NewDrawerModal(name string, side DrawSide, x, y, width, height, slideSpeed 
 	var closeBtn *Button
 	switch side {
 	case DrawSideLeft:
-		closeBtn = NewButton("close", width-24, 8, "X")
+		closeBtn = NewButton("close", width-24, 8, "X", "close")
 	case DrawSideRight:
-		closeBtn = NewButton("close", 8, 8, "X")
+		closeBtn = NewButton("close", 8, 8, "X", "close")
 	case DrawSideTop:
-		closeBtn = NewButton("close", width-24, 8, "X")
+		closeBtn = NewButton("close", width-24, 8, "X", "close")
 	case DrawSideBottom:
-		closeBtn = NewButton("close", width-24, 8, "X")
+		closeBtn = NewButton("close", width-24, 8, "X", "close")
 	default:
-		closeBtn = NewButton("close", width-24, 8, "X")
+		closeBtn = NewButton("close", width-24, 8, "X", "close")
 	}
 	d := &DrawerModal{
 		ElementBase: ElementBase{

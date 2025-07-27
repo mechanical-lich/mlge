@@ -39,7 +39,7 @@ type Modal struct {
 
 // NewModal creates a new modal with initial view.
 func NewModal(name string, x, y, width, height int, initialView string, views map[string]GUIViewInterface) *Modal {
-	closeBtn := NewButton("close", width-24, 8, "X")
+	closeBtn := NewButton("close", width-24, 8, "X", "close")
 	return &Modal{
 		ElementBase: ElementBase{
 			Name:    name,

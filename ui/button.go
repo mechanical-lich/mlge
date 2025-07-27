@@ -11,10 +11,11 @@ import (
 
 type Button struct {
 	ElementBase
-	Text string
+	Text    string
+	Tooltip string
 }
 
-func NewButton(name string, x int, y int, txt string) *Button {
+func NewButton(name string, x int, y int, txt string, tooltip string) *Button {
 	w, h := text.Measure(txt, 16)
 
 	b := &Button{
@@ -29,13 +30,14 @@ func NewButton(name string, x int, y int, txt string) *Button {
 			IconResource: "",
 			op:           &ebiten.DrawImageOptions{},
 		},
-		Text: txt,
+		Text:    txt,
+		Tooltip: tooltip,
 	}
 
 	return b
 }
 
-func NewIconButton(name string, x int, y, iconX, iconY int, iconResource string, txt string) *Button {
+func NewIconButton(name string, x int, y, iconX, iconY int, iconResource string, txt string, tooltip string) *Button {
 	w, h := text.Measure(txt, 16)
 
 	b := &Button{
@@ -50,7 +52,8 @@ func NewIconButton(name string, x int, y, iconX, iconY int, iconResource string,
 			Height:       int(h + 16),
 			op:           &ebiten.DrawImageOptions{},
 		},
-		Text: txt,
+		Text:    txt,
+		Tooltip: tooltip,
 	}
 
 	return b
@@ -82,5 +85,21 @@ func (b *Button) Draw(screen *ebiten.Image, parentX, parentY int, theme *Theme) 
 		}
 	} else {
 		text.Draw(screen, b.Text, 15, b.X+5+parentX, b.Y+5+parentY, color.White)
+	}
+
+	// Tooltip rendering
+	cX, cY := ebiten.CursorPosition()
+	if b.IsWithin(cX, cY, parentX, parentY) && b.Tooltip != "" {
+		tw, th := text.Measure(b.Tooltip, 14)
+		tooltipX := b.X + parentX + b.Width + 8
+		tooltipY := b.Y + parentY
+		// Draw background rectangle for tooltip
+		tooltipRect := ebiten.NewImage(int(tw+10), int(th+8))
+		tooltipRect.Fill(color.RGBA{30, 30, 30, 220})
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(float64(tooltipX), float64(tooltipY))
+		screen.DrawImage(tooltipRect, op)
+		// Draw tooltip text
+		text.Draw(screen, b.Tooltip, 14, tooltipX+5, tooltipY+5, color.White)
 	}
 }

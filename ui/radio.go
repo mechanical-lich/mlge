@@ -11,7 +11,8 @@ import (
 
 type RadioButton struct {
 	ElementBase
-	Label string
+	Label   string
+	Tooltip string
 }
 
 type RadioGroup struct {
@@ -33,7 +34,7 @@ func NewRadioGroup(name string, buttons []*RadioButton) *RadioGroup {
 	}
 }
 
-func NewRadioButton(name string, x, y int, label string) *RadioButton {
+func NewRadioButton(name string, x, y int, label string, tooltip string) *RadioButton {
 	w, h := text.Measure(label, 16)
 
 	return &RadioButton{
@@ -45,11 +46,12 @@ func NewRadioButton(name string, x, y int, label string) *RadioButton {
 			Height: int(h) + 10, // Add some padding
 			op:     &ebiten.DrawImageOptions{},
 		},
-		Label: label,
+		Label:   label,
+		Tooltip: tooltip,
 	}
 }
 
-func NewIconRadioButton(name string, x int, y, iconX, iconY int, iconResource string, label string) *RadioButton {
+func NewIconRadioButton(name string, x int, y, iconX, iconY int, iconResource string, label string, tooltip string) *RadioButton {
 	w, h := text.Measure(label, 16)
 
 	b := &RadioButton{
@@ -64,7 +66,8 @@ func NewIconRadioButton(name string, x int, y, iconX, iconY int, iconResource st
 			Height:       int(h + 16),
 			op:           &ebiten.DrawImageOptions{},
 		},
-		Label: label,
+		Label:   label,
+		Tooltip: tooltip,
 	}
 
 	return b
@@ -116,5 +119,19 @@ func (rb *RadioButton) Draw(screen *ebiten.Image, selected bool, parentX, parent
 		}
 	} else {
 		text.Draw(screen, rb.Label, 15, rb.X+5+parentX, rb.Y+5+parentY, color.White)
+	}
+
+	// Tooltip rendering
+	cX, cY := ebiten.CursorPosition()
+	if rb.IsWithin(cX, cY, parentX, parentY) && rb.Tooltip != "" {
+		tw, th := text.Measure(rb.Tooltip, 14)
+		tooltipX := rb.X + parentX + rb.Width + 8
+		tooltipY := rb.Y + parentY
+		tooltipRect := ebiten.NewImage(int(tw+10), int(th+8))
+		tooltipRect.Fill(color.RGBA{30, 30, 30, 220})
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(float64(tooltipX), float64(tooltipY))
+		screen.DrawImage(tooltipRect, op)
+		text.Draw(screen, rb.Tooltip, 14, tooltipX+5, tooltipY+5, color.White)
 	}
 }
