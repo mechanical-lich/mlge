@@ -16,6 +16,7 @@ type GUIViewInterface interface {
 	GetModalFocused() bool
 	OpenModal(name string)
 	CloseModal(name string)
+	ModalOpen(name string) bool
 	GetPosition() (int, int)
 	SetPosition(x, y int)
 	WithinModalBounds(mouseX, mouseY int) bool
@@ -113,6 +114,13 @@ func (g *GUIViewBase) GetModalFocused() bool {
 		if modal.IsVisible() {
 			return true
 		}
+	}
+	return false
+}
+
+func (g *GUIViewBase) ModalOpen(name string) bool {
+	if modal, exists := g.Modals[name]; exists {
+		return modal.IsOpen()
 	}
 	return false
 }

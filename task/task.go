@@ -21,26 +21,29 @@ const HuntAction TaskAction = "hunt"                      // Hunt for food
 const ButcherAction TaskAction = "butcher"                // Butcher an animal
 
 type Task struct {
-	X          int
-	Y          int
-	Z          int
-	Action     TaskAction
-	Data       any
-	Escalated  bool
-	Completed  bool
-	InProgress bool
-	Created    time.Time
+	X               int
+	Y               int
+	Z               int
+	Action          TaskAction
+	Data            any
+	Escalated       bool
+	Completed       bool
+	InProgress      bool
+	Created         time.Time
+	ManuallyStopped bool
 }
 
 // Mark a task as in progress
 func (t *Task) Start() {
 	t.InProgress = true
+	t.ManuallyStopped = false
 }
 
 // If a task can't be completed call Stop to put it back in the queue
 func (t *Task) Stop() {
 	t.InProgress = false
 	t.Escalated = false
+	t.ManuallyStopped = true
 	t.Created = time.Now()
 }
 
@@ -130,12 +133,18 @@ func (ts *TaskScheduler) PeekClosestNextTask(x, y, z int, allowed_tasks ...TaskA
 		return nil
 	}
 
+	now := time.Now()
 	var closestTask *Task
 	minDist := int(^uint(0) >> 1) // Max int
 
 	for _, task := range ts.tasks {
 		if (len(allowed_tasks) == 0 || slices.Contains(allowed_tasks, task.Action)) &&
 			!task.Completed && !task.InProgress {
+
+			// Only allow manually stopped tasks if 5 seconds have passed since their creation
+			if task.ManuallyStopped && now.Sub(task.Created) < 5*time.Second {
+				continue
+			}
 
 			// Manhattan distance
 			dist := utility.Abs(task.X-x) + utility.Abs(task.Y-y) + utility.Abs(task.Z-z)
@@ -158,10 +167,19 @@ func (ts *TaskScheduler) PeekNextTask(allowed_tasks ...TaskAction) *Task {
 		return nil
 	}
 
+	now := time.Now()
+
 	for i := 0; i < len(ts.tasks); i++ {
 		task := ts.tasks[i]
 
-		if (len(allowed_tasks) == 0 || slices.Contains(allowed_tasks, task.Action)) && !task.Completed && !ts.tasks[i].InProgress {
+		if (len(allowed_tasks) == 0 || slices.Contains(allowed_tasks, task.Action)) &&
+			!task.Completed && !task.InProgress {
+
+			// Only allow manually stopped tasks if 5 seconds have passed since their creation
+			if task.ManuallyStopped && now.Sub(task.Created) < 5*time.Second {
+				continue
+			}
+
 			return task
 		}
 	}

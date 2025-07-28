@@ -118,3 +118,72 @@ func TestTaskScheduler_GetNextTask(t *testing.T) {
 	assert.Equal(t, AggressiveMoveAction, task.Action)
 
 }
+
+func TestTaskScheduler_PeekNextTask_ManuallyStopped(t *testing.T) {
+	ts := &TaskScheduler{}
+
+	task1 := &Task{
+		Action:          DigAction,
+		Created:         time.Now().Add(-3 * time.Second),
+		ManuallyStopped: true,
+	}
+	task2 := &Task{
+		Action:          PickupAction,
+		Created:         time.Now().Add(-6 * time.Second),
+		ManuallyStopped: true,
+	}
+	task3 := &Task{
+		Action:  ScoutAction,
+		Created: time.Now().Add(-7 * time.Second),
+	}
+
+	ts.AddTask(task1)
+	ts.AddTask(task2)
+	ts.AddTask(task3)
+
+	peeked := ts.PeekNextTask()
+	assert.Equal(t, task3, peeked, "Expected normal task")
+
+	task3.InProgress = true // Simulate task3 being in progress
+	peeked = ts.PeekNextTask()
+	assert.Equal(t, task2, peeked, "Expected manually stopped task2")
+}
+
+func TestTaskScheduler_PeekClosestNextTask_ManuallyStopped(t *testing.T) {
+	ts := &TaskScheduler{}
+
+	task1 := &Task{
+		X:               1,
+		Y:               1,
+		Z:               1,
+		Action:          PickupAction,
+		Created:         time.Now().Add(-3 * time.Second),
+		ManuallyStopped: true,
+	}
+	task2 := &Task{
+		X:               2,
+		Y:               2,
+		Z:               2,
+		Action:          PickupAction,
+		Created:         time.Now().Add(-6 * time.Second),
+		ManuallyStopped: true,
+	}
+	task3 := &Task{
+		X:       0,
+		Y:       0,
+		Z:       0,
+		Action:  PickupAction,
+		Created: time.Now(),
+	}
+
+	ts.AddTask(task1)
+	ts.AddTask(task2)
+	ts.AddTask(task3)
+
+	peeked := ts.PeekClosestNextTask(0, 0, 0)
+	assert.Equal(t, task3, peeked, "Expected closest normal task")
+
+	task3.InProgress = true
+	peeked = ts.PeekClosestNextTask(0, 0, 0)
+	assert.Equal(t, task2, peeked, "Expected manually stopped task2")
+}
