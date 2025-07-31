@@ -13,6 +13,7 @@ type Button struct {
 	ElementBase
 	Text    string
 	Tooltip string
+	pressed bool
 }
 
 func NewButton(name string, x int, y int, txt string, tooltip string) *Button {
@@ -60,6 +61,7 @@ func NewIconButton(name string, x int, y, iconX, iconY int, iconResource string,
 }
 
 func (b *Button) Update(parentX, parentY int) {
+	b.pressed = b.IsClicked(parentX, parentY)
 }
 
 func (b *Button) Draw(screen *ebiten.Image, parentX, parentY int, theme *Theme) {
@@ -69,7 +71,7 @@ func (b *Button) Draw(screen *ebiten.Image, parentX, parentY int, theme *Theme) 
 	sX := theme.Button.SrcX
 	sY := theme.Button.SrcY
 
-	if b.IsClicked(parentX, parentY) {
+	if b.pressed {
 		sX += 32
 	}
 

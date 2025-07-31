@@ -106,6 +106,12 @@ func (g *GUIViewBase) GetMouseFocused() bool {
 			return true
 		}
 	}
+
+	for _, modal := range g.Modals {
+		if modal.IsOpen() && modal.GetMouseFocused() {
+			return true
+		}
+	}
 	return false
 }
 

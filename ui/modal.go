@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"fmt"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/mechanical-lich/mlge/state"
 	"github.com/mechanical-lich/mlge/utility"
@@ -11,6 +13,7 @@ type ModalInterface interface {
 	Update(s state.StateInterface)
 	Draw(screen *ebiten.Image, s state.StateInterface, theme *Theme)
 	GetInputFocused() bool
+	GetMouseFocused() bool
 	WithinBounds(mouseX, mouseY int) bool
 	GetName() string
 	GetPosition() (int, int)
@@ -35,6 +38,7 @@ type Modal struct {
 	dragOffsetX int
 	dragOffsetY int
 	bg          *ebiten.Image // Background image for the modal
+	offscreen   *ebiten.Image // Offscreen buffer for double buffering
 }
 
 // NewModal creates a new modal with initial view.
@@ -123,22 +127,38 @@ func (m *Modal) Draw(screen *ebiten.Image, s state.StateInterface, theme *Theme)
 		return
 	}
 
+	// Ensure offscreen buffer is correct size
 	if m.bg == nil || m.bg.Bounds().Dx() != m.Width || m.bg.Bounds().Dy() != m.Height {
 		m.bg = ebiten.NewImage(m.Width, m.Height)
 		utility.Draw9Slice(m.bg, 0, 0, m.Width, m.Height, theme.ModalNineSlice.SrcX, theme.ModalNineSlice.SrcY, theme.ModalNineSlice.TileSize, theme.ModalNineSlice.TileScale)
 	}
-	// Draw the modal background
-	m.op.GeoM.Reset()
-	m.op.GeoM.Translate(float64(m.X), float64(m.Y))
-	screen.DrawImage(m.bg, m.op)
-
-	m.CloseButton.Draw(screen, m.X, m.Y, theme)
-
-	if v, ok := m.Views[m.CurrentView]; ok {
-		v.SetPosition(m.X, m.Y)
-		v.Draw(screen, s, theme)
-		v.DrawElements(screen, s, theme)
+	if m.offscreen == nil || m.offscreen.Bounds().Dx() != m.Width || m.offscreen.Bounds().Dy() != m.Height {
+		m.offscreen = ebiten.NewImage(m.Width, m.Height)
 	}
+
+	// Clear offscreen buffer
+	m.offscreen.Clear()
+
+	// Draw modal background to offscreen
+	opBg := &ebiten.DrawImageOptions{}
+	opBg.GeoM.Reset()
+	opBg.GeoM.Translate(0, 0)
+	m.offscreen.DrawImage(m.bg, opBg)
+
+	// Draw close button to offscreen
+	m.CloseButton.Draw(m.offscreen, 0, 0, theme)
+
+	// Draw current view to offscreen
+	if v, ok := m.Views[m.CurrentView]; ok {
+		v.SetPosition(0, 0)
+		v.Draw(m.offscreen, s, theme)
+		v.DrawElements(m.offscreen, s, theme)
+	}
+
+	// Draw offscreen buffer to screen at modal position
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Translate(float64(m.X), float64(m.Y))
+	screen.DrawImage(m.offscreen, op)
 }
 
 // GetInputFocused delegates to the current view.
@@ -147,6 +167,13 @@ func (m *Modal) GetInputFocused() bool {
 		return v.GetInputFocused()
 	}
 	return false
+}
+
+func (m *Modal) GetMouseFocused() bool {
+
+	cX, cY := ebiten.CursorPosition()
+	fmt.Println("Modal GetInputFocused:", m.Name, "Cursor:", cX, cY, "Position:", m.X, m.Y, "Size:", m.Width, m.Height)
+	return m.WithinBounds(cX, cY)
 }
 
 func (m *Modal) WithinBounds(mouseX, mouseY int) bool {
