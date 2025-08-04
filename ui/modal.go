@@ -1,8 +1,6 @@
 package ui
 
 import (
-	"fmt"
-
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/mechanical-lich/mlge/state"
 	"github.com/mechanical-lich/mlge/utility"
@@ -172,7 +170,6 @@ func (m *Modal) GetInputFocused() bool {
 func (m *Modal) GetMouseFocused() bool {
 
 	cX, cY := ebiten.CursorPosition()
-	fmt.Println("Modal GetInputFocused:", m.Name, "Cursor:", cX, cY, "Position:", m.X, m.Y, "Size:", m.Width, m.Height)
 	return m.WithinBounds(cX, cY)
 }
 

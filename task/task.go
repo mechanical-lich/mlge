@@ -47,6 +47,13 @@ func (t *Task) Stop() {
 	t.Created = time.Now()
 }
 
+// ReQueue puts the task back in the queue without the restart delay
+func (t *Task) ReQueue() {
+	t.InProgress = false
+	t.Escalated = false
+	t.Created = time.Now()
+}
+
 // Mark a task as complete.  Completed tasks get automatically cleaned up.
 func (t *Task) Complete() {
 	//log.Printf("Task to %s completed at %s at [%d,%d,%d]", t.Action, t.Created.String(), t.X, t.Y, t.Z)
@@ -185,4 +192,8 @@ func (ts *TaskScheduler) PeekNextTask(allowed_tasks ...TaskAction) *Task {
 	}
 
 	return nil
+}
+
+func (ts *TaskScheduler) Count() int {
+	return len(ts.tasks)
 }

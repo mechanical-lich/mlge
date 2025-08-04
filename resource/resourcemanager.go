@@ -1,11 +1,14 @@
 package resource
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"image"
+	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/go-fonts/liberation/liberationsansregular"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -18,6 +21,31 @@ import (
 var Textures map[string]*ebiten.Image
 var Fonts map[string]font.Face
 var Sounds map[string]audio.AudioResource
+
+func LoadAssetsFromJSON(jsonPath string) error {
+	assets := make(map[string]string)
+	data, err := ioutil.ReadFile(jsonPath)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(data, &assets); err != nil {
+		return fmt.Errorf("failed to unmarshal assets JSON: %w", err)
+	}
+
+	for name, path := range assets {
+		if strings.Contains(path, ".ttf") {
+			if err := LoadFont(name, path); err != nil {
+				return fmt.Errorf("failed to load font %s: %w", name, err)
+			}
+		} else {
+			if err := LoadImageAsTexture(name, path); err != nil {
+				return fmt.Errorf("failed to load image %s: %w", name, err)
+			}
+		}
+	}
+
+	return nil
+}
 
 // LoadImageAsTexture - Loads an image in the texture map with the given name and path.
 func LoadImageAsTexture(name string, path string) error {
