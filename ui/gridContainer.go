@@ -22,6 +22,11 @@ type GridContainer struct {
 	ScrollX   int
 	ScrollY   int
 	image     *ebiten.Image // Offscreen buffer for drawing
+
+	vBarBg *ebiten.Image
+	vThumb *ebiten.Image
+	hBarBg *ebiten.Image
+	hThumb *ebiten.Image
 }
 
 // NewGridContainer creates a new grid container.
@@ -171,9 +176,9 @@ func (g *GridContainer) Draw(screen *ebiten.Image, parentX, parentY int, theme *
 		i++
 	}
 
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(float64(ox), float64(oy))
-	screen.DrawImage(g.image, op)
+	g.op.GeoM.Reset()
+	g.op.GeoM.Translate(float64(ox), float64(oy))
+	screen.DrawImage(g.image, g.op)
 
 	// Draw scrollbars if needed
 	if g.MaxHeight > 0 && g.contentHeight() > g.MaxHeight {
@@ -226,16 +231,24 @@ func (g *GridContainer) drawVScrollbar(screen *ebiten.Image, x, y, height int) {
 	if totalH > g.MaxHeight && scrollRange > 0 {
 		thumbY = y + (scrollRange*g.ScrollY)/(totalH-g.MaxHeight)
 	}
-	barBg := ebiten.NewImage(barW, barH)
-	barBg.Fill(color.RGBA{60, 60, 60, 180})
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(float64(x), float64(y))
-	screen.DrawImage(barBg, op)
-	thumb := ebiten.NewImage(barW, thumbH)
-	thumb.Fill(color.RGBA{160, 160, 160, 220})
-	op2 := &ebiten.DrawImageOptions{}
-	op2.GeoM.Translate(float64(x), float64(thumbY))
-	screen.DrawImage(thumb, op2)
+
+	// Cache or recreate vertical scrollbar background
+	if g.vBarBg == nil || g.vBarBg.Bounds().Dx() != barW || g.vBarBg.Bounds().Dy() != barH {
+		g.vBarBg = ebiten.NewImage(barW, barH)
+		g.vBarBg.Fill(color.RGBA{60, 60, 60, 180})
+	}
+	g.op.GeoM.Reset()
+	g.op.GeoM.Translate(float64(x), float64(y))
+	screen.DrawImage(g.vBarBg, g.op)
+
+	// Cache or recreate vertical thumb
+	if g.vThumb == nil || g.vThumb.Bounds().Dx() != barW || g.vThumb.Bounds().Dy() != thumbH {
+		g.vThumb = ebiten.NewImage(barW, thumbH)
+		g.vThumb.Fill(color.RGBA{160, 160, 160, 220})
+	}
+	g.op.GeoM.Reset()
+	g.op.GeoM.Translate(float64(x), float64(thumbY))
+	screen.DrawImage(g.vThumb, g.op)
 }
 
 // Draw horizontal scrollbar
@@ -255,14 +268,22 @@ func (g *GridContainer) drawHScrollbar(screen *ebiten.Image, x, y, width int) {
 	if totalW > g.MaxWidth && scrollRange > 0 {
 		thumbX = x + (scrollRange*g.ScrollX)/(totalW-g.MaxWidth)
 	}
-	barBg := ebiten.NewImage(barW, barH)
-	barBg.Fill(color.RGBA{60, 60, 60, 180})
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(float64(x), float64(y))
-	screen.DrawImage(barBg, op)
-	thumb := ebiten.NewImage(thumbW, barH)
-	thumb.Fill(color.RGBA{160, 160, 160, 220})
-	op2 := &ebiten.DrawImageOptions{}
-	op2.GeoM.Translate(float64(thumbX), float64(y))
-	screen.DrawImage(thumb, op2)
+
+	// Cache or recreate horizontal scrollbar background
+	if g.hBarBg == nil || g.hBarBg.Bounds().Dx() != barW || g.hBarBg.Bounds().Dy() != barH {
+		g.hBarBg = ebiten.NewImage(barW, barH)
+		g.hBarBg.Fill(color.RGBA{60, 60, 60, 180})
+	}
+	g.op.GeoM.Reset()
+	g.op.GeoM.Translate(float64(x), float64(y))
+	screen.DrawImage(g.hBarBg, g.op)
+
+	// Cache or recreate horizontal thumb
+	if g.hThumb == nil || g.hThumb.Bounds().Dx() != thumbW || g.hThumb.Bounds().Dy() != barH {
+		g.hThumb = ebiten.NewImage(thumbW, barH)
+		g.hThumb.Fill(color.RGBA{160, 160, 160, 220})
+	}
+	g.op.GeoM.Reset()
+	g.op.GeoM.Translate(float64(thumbX), float64(y))
+	screen.DrawImage(g.hThumb, g.op)
 }

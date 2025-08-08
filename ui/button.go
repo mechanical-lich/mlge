@@ -11,9 +11,12 @@ import (
 
 type Button struct {
 	ElementBase
-	Text    string
-	Tooltip string
-	pressed bool
+	Text            string
+	Tooltip         string
+	pressed         bool
+	tooltipBg       *ebiten.Image // cache for tooltip background
+	tooltipBgWidth  int
+	tooltipBgHeight int
 }
 
 func NewButton(name string, x int, y int, txt string, tooltip string) *Button {
@@ -93,14 +96,20 @@ func (b *Button) Draw(screen *ebiten.Image, parentX, parentY int, theme *Theme) 
 	cX, cY := ebiten.CursorPosition()
 	if b.IsWithin(cX, cY, parentX, parentY) && b.Tooltip != "" {
 		tw, th := text.Measure(b.Tooltip, 14)
+		tooltipW := int(tw + 10)
+		tooltipH := int(th + 8)
 		tooltipX := b.X + parentX + b.Width + 8
 		tooltipY := b.Y + parentY
-		// Draw background rectangle for tooltip
-		tooltipRect := ebiten.NewImage(int(tw+10), int(th+8))
-		tooltipRect.Fill(color.RGBA{30, 30, 30, 220})
+		// Only recreate if size changes
+		if b.tooltipBg == nil || b.tooltipBgWidth != tooltipW || b.tooltipBgHeight != tooltipH {
+			b.tooltipBg = ebiten.NewImage(tooltipW, tooltipH)
+			b.tooltipBg.Fill(color.RGBA{30, 30, 30, 220})
+			b.tooltipBgWidth = tooltipW
+			b.tooltipBgHeight = tooltipH
+		}
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(tooltipX), float64(tooltipY))
-		screen.DrawImage(tooltipRect, op)
+		screen.DrawImage(b.tooltipBg, op)
 		// Draw tooltip text
 		text.Draw(screen, b.Tooltip, 14, tooltipX+5, tooltipY+5, color.White)
 	}

@@ -11,8 +11,11 @@ import (
 
 type RadioButton struct {
 	ElementBase
-	Label   string
-	Tooltip string
+	Label           string
+	Tooltip         string
+	tooltipBg       *ebiten.Image // cache for tooltip background
+	tooltipBgWidth  int
+	tooltipBgHeight int
 }
 
 type RadioGroup struct {
@@ -125,13 +128,22 @@ func (rb *RadioButton) Draw(screen *ebiten.Image, selected bool, parentX, parent
 	cX, cY := ebiten.CursorPosition()
 	if rb.IsWithin(cX, cY, parentX, parentY) && rb.Tooltip != "" {
 		tw, th := text.Measure(rb.Tooltip, 14)
+		tooltipW := int(tw + 10)
+		tooltipH := int(th + 8)
 		tooltipX := rb.X + parentX + rb.Width + 8
 		tooltipY := rb.Y + parentY
-		tooltipRect := ebiten.NewImage(int(tw+10), int(th+8))
-		tooltipRect.Fill(color.RGBA{30, 30, 30, 220})
+
+		// Only recreate if size changes
+		if rb.tooltipBg == nil || rb.tooltipBgWidth != tooltipW || rb.tooltipBgHeight != tooltipH {
+			rb.tooltipBg = ebiten.NewImage(tooltipW, tooltipH)
+			rb.tooltipBg.Fill(color.RGBA{30, 30, 30, 220})
+			rb.tooltipBgWidth = tooltipW
+			rb.tooltipBgHeight = tooltipH
+		}
+
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(tooltipX), float64(tooltipY))
-		screen.DrawImage(tooltipRect, op)
+		screen.DrawImage(rb.tooltipBg, op)
 		text.Draw(screen, rb.Tooltip, 14, tooltipX+5, tooltipY+5, color.White)
 	}
 }

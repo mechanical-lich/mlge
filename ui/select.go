@@ -19,6 +19,20 @@ type SelectBox struct {
 	VisibleItems int
 	ItemHeight   int
 	OnChange     func(selected int)
+
+	// Cached images to avoid per-frame allocations
+	dropdownBg     *ebiten.Image
+	dropdownBgW    int
+	dropdownBgH    int
+	highlightImg   *ebiten.Image
+	highlightImgW  int
+	highlightImgH  int
+	scrollBarBg    *ebiten.Image
+	scrollBarBgW   int
+	scrollBarBgH   int
+	scrollThumbImg *ebiten.Image
+	scrollThumbW   int
+	scrollThumbH   int
 }
 
 func NewSelectBox(name string, x, y, width, visibleItems int, options []string) *SelectBox {
@@ -115,11 +129,17 @@ func (s *SelectBox) Draw(screen *ebiten.Image, parentX, parentY int, theme *Them
 	// Draw dropdown list if open
 	if s.Open {
 		listH := s.ItemHeight * s.VisibleItems
-		bg := ebiten.NewImage(s.Width, listH)
-		bg.Fill(color.RGBA{40, 40, 40, 240})
+
+		// Cache/recreate dropdown background
+		if s.dropdownBg == nil || s.dropdownBgW != s.Width || s.dropdownBgH != listH {
+			s.dropdownBg = ebiten.NewImage(s.Width, listH)
+			s.dropdownBg.Fill(color.RGBA{40, 40, 40, 240})
+			s.dropdownBgW = s.Width
+			s.dropdownBgH = listH
+		}
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(absX), float64(absY+s.Height))
-		screen.DrawImage(bg, op)
+		screen.DrawImage(s.dropdownBg, op)
 
 		start := s.ScrollOffset
 		end := int(math.Min(float64(start+s.VisibleItems), float64(len(s.Options))))
@@ -128,12 +148,16 @@ func (s *SelectBox) Draw(screen *ebiten.Image, parentX, parentY int, theme *Them
 			var optColor color.Color
 			optColor = color.White
 			if i == s.Selected {
-				// Highlight selected
-				highlight := ebiten.NewImage(s.Width, s.ItemHeight)
-				highlight.Fill(color.RGBA{80, 80, 120, 180})
+				// Cache/recreate highlight image
+				if s.highlightImg == nil || s.highlightImgW != s.Width || s.highlightImgH != s.ItemHeight {
+					s.highlightImg = ebiten.NewImage(s.Width, s.ItemHeight)
+					s.highlightImg.Fill(color.RGBA{80, 80, 120, 180})
+					s.highlightImgW = s.Width
+					s.highlightImgH = s.ItemHeight
+				}
 				op2 := &ebiten.DrawImageOptions{}
 				op2.GeoM.Translate(float64(absX), float64(optY))
-				screen.DrawImage(highlight, op2)
+				screen.DrawImage(s.highlightImg, op2)
 				optColor = color.RGBA{255, 255, 180, 255}
 			}
 			text.Draw(screen, s.Options[i], 15, absX+6, optY+4, optColor)
@@ -164,18 +188,26 @@ func (s *SelectBox) drawScrollbar(screen *ebiten.Image, x, y, listH int, theme *
 	} else {
 		thumbY = barY
 	}
-	// Draw scrollbar background
-	barBg := ebiten.NewImage(barW, barH)
-	barBg.Fill(color.RGBA{60, 60, 60, 180})
+	// Cache/recreate scrollbar background
+	if s.scrollBarBg == nil || s.scrollBarBgW != barW || s.scrollBarBgH != barH {
+		s.scrollBarBg = ebiten.NewImage(barW, barH)
+		s.scrollBarBg.Fill(color.RGBA{60, 60, 60, 180})
+		s.scrollBarBgW = barW
+		s.scrollBarBgH = barH
+	}
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(float64(barX), float64(barY))
-	screen.DrawImage(barBg, op)
-	// Draw thumb
-	thumb := ebiten.NewImage(barW, thumbH)
-	thumb.Fill(color.RGBA{160, 160, 160, 220})
+	screen.DrawImage(s.scrollBarBg, op)
+	// Cache/recreate thumb
+	if s.scrollThumbImg == nil || s.scrollThumbW != barW || s.scrollThumbH != thumbH {
+		s.scrollThumbImg = ebiten.NewImage(barW, thumbH)
+		s.scrollThumbImg.Fill(color.RGBA{160, 160, 160, 220})
+		s.scrollThumbW = barW
+		s.scrollThumbH = thumbH
+	}
 	op2 := &ebiten.DrawImageOptions{}
 	op2.GeoM.Translate(float64(barX), float64(thumbY))
-	screen.DrawImage(thumb, op2)
+	screen.DrawImage(s.scrollThumbImg, op2)
 }
 
 // Helper: draw a downward triangle for the dropdown arrow

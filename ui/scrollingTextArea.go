@@ -20,6 +20,7 @@ type ScrollingTextArea struct {
 
 	draggingThumb bool
 	dragOffsetY   int
+	bg            *ebiten.Image
 }
 
 func NewScrollingTextArea(name string, x, y, width, height int, txt string) *ScrollingTextArea {
@@ -134,16 +135,19 @@ func (s *ScrollingTextArea) Draw(screen *ebiten.Image, parentX, parentY int, the
 	}
 	s.op.GeoM.Reset()
 	s.op.GeoM.Translate(float64(s.X+parentX), float64(s.Y+parentY))
-	bg := ebiten.NewImage(s.Width, s.Height)
+	if s.bg == nil {
+		bg := ebiten.NewImage(s.Width, s.Height)
+		s.bg = bg
+	}
 	utility.Draw9Slice(
-		bg,
+		s.bg,
 		0, 0, s.Width, s.Height,
 		theme.ScrollingTextArea.SrcX,
 		theme.ScrollingTextArea.SrcY,
 		theme.ScrollingTextArea.TileSize,
 		theme.ScrollingTextArea.TileScale,
 	)
-	screen.DrawImage(bg, s.op)
+	screen.DrawImage(s.bg, s.op)
 
 	// Draw text lines
 	start := s.ScrollOffset
@@ -181,10 +185,10 @@ func (s *ScrollingTextArea) drawScrollbar(screen *ebiten.Image, parentX, parentY
 
 	// Draw scrollbar background
 	barBg := resource.GetSubImage("ui", theme.ScrollingTextArea.ScrollBarX, theme.ScrollingTextArea.ScrollBarY, theme.ScrollingTextArea.ScrollBarWidth, theme.ScrollingTextArea.ScrollBarHeight)
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Scale(float64(barW)/16.0, float64(barH)/48.0)
-	op.GeoM.Translate(float64(barX), float64(barY))
-	screen.DrawImage(barBg, op)
+	s.op.GeoM.Reset()
+	s.op.GeoM.Scale(float64(barW)/16.0, float64(barH)/48.0)
+	s.op.GeoM.Translate(float64(barX), float64(barY))
+	screen.DrawImage(barBg, s.op)
 
 	// Draw thumb
 	thumbH := int(math.Max(float64(barH*s.VisibleLines/totalLines), 16))
@@ -196,10 +200,10 @@ func (s *ScrollingTextArea) drawScrollbar(screen *ebiten.Image, parentX, parentY
 		thumbY = barY
 	}
 	thumb := resource.GetSubImage("ui", theme.ScrollingTextArea.ThumbX, theme.ScrollingTextArea.ThumbY, theme.ScrollingTextArea.ThumbWidth, theme.ScrollingTextArea.ThumbHeight)
-	op2 := &ebiten.DrawImageOptions{}
-	op2.GeoM.Scale(float64(barW)/16.0, float64(thumbH)/16.0)
-	op2.GeoM.Translate(float64(barX), float64(thumbY))
-	screen.DrawImage(thumb, op2)
+	s.op.GeoM.Reset()
+	s.op.GeoM.Scale(float64(barW)/16.0, float64(thumbH)/16.0)
+	s.op.GeoM.Translate(float64(barX), float64(thumbY))
+	screen.DrawImage(thumb, s.op)
 }
 
 func (s *ScrollingTextArea) AddText(txt string) {
