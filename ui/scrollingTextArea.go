@@ -207,9 +207,23 @@ func (s *ScrollingTextArea) drawScrollbar(screen *ebiten.Image, parentX, parentY
 }
 
 func (s *ScrollingTextArea) AddText(txt string) {
+	const maxLines = 20
 	s.Text += "\n" + txt
+
 	// Wrap text to width of scrolling area
-	s.Lines = text.Wrap(s.Text, (s.Width-32)/5, 15) // Subtract padding for wrap
+	s.Lines = text.Wrap(s.Text, (s.Width-32)/5, 0) // Subtract padding for wrap
+
+	// Drop oldest lines if over maxLines
+	for len(s.Lines) > maxLines {
+		s.Lines = s.Lines[1:]
+		s.Text = ""
+		for i, line := range s.Lines {
+			if i > 0 {
+				s.Text += "\n"
+			}
+			s.Text += line
+		}
+	}
 
 	if len(s.Lines) > s.VisibleLines {
 		s.ScrollOffset = len(s.Lines) - s.VisibleLines // Auto-scroll to bottom

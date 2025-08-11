@@ -43,3 +43,21 @@ func (s *SystemManager) UpdateSystemsForEntity(world any, entity *Entity) error 
 	}
 	return nil
 }
+
+func (s *SystemManager) UpdateSystemsForEntities(world any, entities []*Entity) error {
+
+	for _, system := range s.systems {
+		required := system.Requires()
+		for _, entity := range entities {
+			if entity.HasComponent("InanimateComponent") {
+				continue // Skip inanimate entities
+			}
+			if entity.HasComponents(required...) {
+				if err := system.UpdateEntity(world, entity); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}

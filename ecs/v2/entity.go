@@ -17,19 +17,11 @@ func (entity *Entity) AddComponent(c Component) {
 
 // HasComponent - Returns if the entity has the
 func (entity *Entity) HasComponent(name ComponentType) bool {
-	if entity.Components == nil {
-		entity.Components = make(map[ComponentType]Component)
-	}
-
 	return entity.Components[name] != nil
 }
 
 // HasComponents - takes a comma separated string of component names and returns if entity has all of them.
 func (entity *Entity) HasComponents(names ...ComponentType) bool {
-	if entity.Components == nil {
-		entity.Components = make(map[ComponentType]Component)
-	}
-
 	for _, name := range names {
 		if entity.Components[name] == nil {
 			return false
@@ -41,10 +33,6 @@ func (entity *Entity) HasComponents(names ...ComponentType) bool {
 
 // GetComponent - Gets the component as a component interface.
 func (entity *Entity) GetComponent(name ComponentType) Component {
-	if entity.Components == nil {
-		entity.Components = make(map[ComponentType]Component)
-	}
-
 	return entity.Components[name]
 }
 
