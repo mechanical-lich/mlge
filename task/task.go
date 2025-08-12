@@ -10,16 +10,6 @@ import (
 
 type TaskAction string
 
-// Default Task actions
-const PickupAction TaskAction = "pickup"                  // Pickup item at tile
-const ScoutAction TaskAction = "scout"                    // Non-aggressive move to location
-const AggressiveMoveAction TaskAction = "aggressive_move" // Move to location but attack things in sight along the way
-const AttackAction TaskAction = "attack"                  // Attack whatever is in square if possible (moves to it)
-const BuildAction TaskAction = "build"                    // Build at tile
-const DigAction TaskAction = "dig"                        // Digs up a tile if possible.
-const HuntAction TaskAction = "hunt"                      // Hunt for food
-const ButcherAction TaskAction = "butcher"                // Butcher an animal
-
 type Task struct {
 	X               int
 	Y               int
