@@ -61,6 +61,7 @@ func (g *GUIViewBase) AddModal(modal containers.ModalInterface) {
 	g.Modals[modal.GetName()] = modal
 }
 
+// Updates elements for a view.  Is automatically called by the GUI manager.
 func (g *GUIViewBase) UpdateElements() {
 	for _, element := range g.Elements {
 		element.Update()
@@ -72,6 +73,7 @@ func (g *GUIViewBase) UpdateElements() {
 
 }
 
+// Draws elements for a view.  It is automatically called by the GUI manager.
 func (g *GUIViewBase) DrawElements(screen *ebiten.Image, theme *theming.Theme) {
 	// Draw buttons
 	for _, e := range g.Elements {
