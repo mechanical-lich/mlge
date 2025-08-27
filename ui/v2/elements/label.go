@@ -8,6 +8,7 @@ import (
 	theming "github.com/mechanical-lich/mlge/ui/v2/theming"
 )
 
+// Represents a text label element.   Labels are meant to be static text that is not typically interacted with directly.
 type Label struct {
 	ElementBase
 	Text     string
@@ -15,6 +16,7 @@ type Label struct {
 	Color    color.Color
 }
 
+// Creates a new label with the given parameters.
 func NewLabel(name string, x int, y int, txt string) *Label {
 	size := 14.0
 	w, h := text.Measure(txt, size)

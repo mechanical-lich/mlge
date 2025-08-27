@@ -11,6 +11,7 @@ import (
 	"github.com/mechanical-lich/mlge/utility"
 )
 
+// Represents a scrolling text area.   As more text is added it'll add them as lines and scroll as it goes.
 type ScrollingTextArea struct {
 	ElementBase
 	Text         string
@@ -24,6 +25,7 @@ type ScrollingTextArea struct {
 	bg            *ebiten.Image
 }
 
+// Creates a new ScrollingTextArea with the given parameters.
 func NewScrollingTextArea(name string, x, y, width, height int, txt string) *ScrollingTextArea {
 	lines := text.Wrap(txt, width-16, 15) // Subtract padding for wrap
 	lineHeight := 18                      // Adjust as needed for your font
@@ -213,6 +215,7 @@ func (s *ScrollingTextArea) drawScrollbar(screen *ebiten.Image, theme *theming.T
 	screen.DrawImage(thumb, s.Op)
 }
 
+// Adds text to the scrolling text area.
 func (s *ScrollingTextArea) AddText(txt string) {
 	const maxLines = 20
 	s.Text += "\n" + txt

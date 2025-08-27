@@ -10,6 +10,7 @@ import (
 	theming "github.com/mechanical-lich/mlge/ui/v2/theming"
 )
 
+// Button - represents a clickable button UI element
 type Button struct {
 	ElementBase
 	Text            string
@@ -18,8 +19,10 @@ type Button struct {
 	tooltipBg       *ebiten.Image // cache for tooltip background
 	tooltipBgWidth  int
 	tooltipBgHeight int
+	OnClicked       func() // Optional onclick handler function
 }
 
+// Creates a new button with given name, position, text, and tooltip.
 func NewButton(name string, x int, y int, txt string, tooltip string) *Button {
 	w, h := text.Measure(txt, 16)
 
@@ -42,6 +45,7 @@ func NewButton(name string, x int, y int, txt string, tooltip string) *Button {
 	return b
 }
 
+// Creates a new button with an icon, given name, position, icon coordinates, icon resource, text, and tooltip.
 func NewIconButton(name string, x int, y, iconX, iconY int, iconResource string, txt string, tooltip string) *Button {
 	w, h := text.Measure(txt, 16)
 
@@ -66,6 +70,9 @@ func NewIconButton(name string, x int, y, iconX, iconY int, iconResource string,
 
 func (b *Button) Update() {
 	b.pressed = b.IsClicked()
+	if b.pressed && b.OnClicked != nil {
+		b.OnClicked()
+	}
 }
 
 func (b *Button) Draw(screen *ebiten.Image, theme *theming.Theme) {

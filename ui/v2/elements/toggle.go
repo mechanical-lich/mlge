@@ -10,14 +10,17 @@ import (
 	theming "github.com/mechanical-lich/mlge/ui/v2/theming"
 )
 
+// Represents a toggle switch element.  Clicking it toggles the "On" value true and false.
 type Toggle struct {
 	ElementBase // Embed ElementBase for common properties
 
 	Text string
 
-	On bool
+	On       bool
+	OnChange func(value bool) // Optional onchange handler function
 }
 
+// Creates a new Toggle with the given parameters.
 func NewToggle(name string, x int, y int, txt string) *Toggle {
 	w, h := text.Measure(txt, 16)
 
@@ -37,6 +40,7 @@ func NewToggle(name string, x int, y int, txt string) *Toggle {
 	return b
 }
 
+// Creates a new toggle with an icon.
 func NewIconToggle(name string, x int, y, iconX, iconY int, iconResource string, txt string) *Toggle {
 	w, h := text.Measure(txt, 16)
 
@@ -61,6 +65,9 @@ func NewIconToggle(name string, x int, y, iconX, iconY int, iconResource string,
 func (b *Toggle) Update() {
 	if b.IsJustClicked() {
 		b.On = !b.On
+		if b.OnChange != nil {
+			b.OnChange(b.On)
+		}
 	}
 }
 

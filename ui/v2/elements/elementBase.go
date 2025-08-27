@@ -77,6 +77,7 @@ func (e *ElementBase) GetScreenPosition() (int, int) {
 	return e.X, e.Y
 }
 
+// Returns if the element was just clicked.  Requires the element to become unclicked to register a new click.
 func (b *ElementBase) IsJustClicked() bool {
 	if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
 		cX, cY := ebiten.CursorPosition()
@@ -88,28 +89,38 @@ func (b *ElementBase) IsJustClicked() bool {
 	return false
 }
 
+// Get the position of the element
 func (b *ElementBase) GetPosition() (int, int) {
 	return b.X, b.Y
 }
+
+// Set the position of the element.
 func (b *ElementBase) SetPosition(x, y int) {
 	b.X = x
 	b.Y = y
 }
+
+// Get the element's width
 func (b *ElementBase) GetWidth() int {
 	return b.Width
 }
+
+// Get the element's height
 func (b *ElementBase) GetHeight() int {
 	return b.Height
 }
 
+// Get if the element is currently focused on.   Ex.  Input is being typed into.
 func (b *ElementBase) GetFocused() bool {
 	return b.Focused
 }
 
+// Set the element's parent.  Normally a container.
 func (b *ElementBase) SetParent(p ElementInterface) {
 	b.Parent = p
 }
 
+// Get's the parent's current position.
 func (b *ElementBase) GetParentPosition() (int, int) {
 	if b.Parent != nil {
 		return b.Parent.GetPosition()

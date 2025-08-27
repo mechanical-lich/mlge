@@ -10,6 +10,7 @@ import (
 	theming "github.com/mechanical-lich/mlge/ui/v2/theming"
 )
 
+// Represents a single radio button element.
 type RadioButton struct {
 	ElementBase
 	Label           string
@@ -17,14 +18,19 @@ type RadioButton struct {
 	tooltipBg       *ebiten.Image // cache for tooltip background
 	tooltipBgWidth  int
 	tooltipBgHeight int
+	OnClick         func() // Optional onclick handler function
 }
 
+// Represents a group of radio buttons where only one can be selected at a time.
 type RadioGroup struct {
 	ElementBase
-	Buttons  []*RadioButton
-	Selected int
+	Buttons   []*RadioButton
+	Selected  int
+	OnChange  func(selected int) // Optional onchange handler function
+	OnClicked func(selected int) // Optional onclick handler function
 }
 
+// Creates a new Radio group with the given buttons.
 func NewRadioGroup(name string, buttons []*RadioButton) *RadioGroup {
 	if buttons == nil {
 		buttons = make([]*RadioButton, 0)
@@ -38,6 +44,7 @@ func NewRadioGroup(name string, buttons []*RadioButton) *RadioGroup {
 	}
 }
 
+// Creates a new Radio button with the given parameters.
 func NewRadioButton(name string, x, y int, label string, tooltip string) *RadioButton {
 	w, h := text.Measure(label, 16)
 
@@ -55,6 +62,7 @@ func NewRadioButton(name string, x, y int, label string, tooltip string) *RadioB
 	}
 }
 
+// Creates a new Radio button with an icon.
 func NewIconRadioButton(name string, x int, y, iconX, iconY int, iconResource string, label string, tooltip string) *RadioButton {
 	w, h := text.Measure(label, 16)
 
@@ -79,7 +87,15 @@ func NewIconRadioButton(name string, x int, y, iconX, iconY int, iconResource st
 
 func (rg *RadioGroup) Update() {
 	for i, button := range rg.Buttons {
+		button.Update()
 		if button.IsClicked() {
+			if rg.OnChange != nil && rg.Selected != i {
+				rg.OnChange(i)
+			}
+
+			if rg.OnClicked != nil {
+				rg.OnClicked(i)
+			}
 			rg.Selected = i
 			break
 		}
@@ -93,11 +109,18 @@ func (rg *RadioGroup) Draw(screen *ebiten.Image, theme *theming.Theme) {
 	}
 }
 
+// Get the currently selected radio button.
 func (rg *RadioGroup) GetSelected() *RadioButton {
 	if rg.Selected < 0 || rg.Selected >= len(rg.Buttons) {
 		return nil
 	}
 	return rg.Buttons[rg.Selected]
+}
+
+func (rb *RadioButton) Update() {
+	if rb.OnClick != nil && rb.IsJustClicked() {
+		rb.OnClick()
+	}
 }
 
 func (rb *RadioButton) Draw(screen *ebiten.Image, selected bool, theme *theming.Theme) {

@@ -11,13 +11,16 @@ import (
 	theming "github.com/mechanical-lich/mlge/ui/v2/theming"
 )
 
+// Represents a text input field element.
 type InputField struct {
 	ElementBase
 	MaxLength int
 	Value     []rune
-	Cursor    int // index in Value
+	Cursor    int                // index in Value
+	OnChange  func(value string) // Optional onchange handler function
 }
 
+// Creates a new input field with the given parameters.
 func NewInputField(name string, x, y, width, maxLength int) *InputField {
 	// Generate string l
 	_, h := text.Measure("A", 16)
@@ -53,6 +56,7 @@ func (f *InputField) Update() {
 	}
 
 	// Handle text input
+	oldValue := string(f.Value)
 	for _, r := range ebiten.AppendInputChars(nil) {
 		if r == '\n' || r == '\r' {
 			continue
@@ -77,6 +81,10 @@ func (f *InputField) Update() {
 		before := f.Value[:f.Cursor]
 		after := f.Value[f.Cursor+1:]
 		f.Value = append(before, after...)
+	}
+
+	if oldValue != string(f.Value) && f.OnChange != nil {
+		f.OnChange(string(f.Value))
 	}
 
 	// Handle arrow keys

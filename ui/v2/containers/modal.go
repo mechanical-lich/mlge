@@ -35,7 +35,9 @@ type Modal struct {
 	bg          *ebiten.Image // Background image for the modal
 	offscreen   *ebiten.Image // Offscreen buffer for double buffering
 
-	Children []elements.ElementInterface // Children elements
+	Children []elements.ElementInterface                      // Children elements
+	OnUpdate func()                                           // Optional update callback
+	OnDraw   func(screen *ebiten.Image, theme *theming.Theme) // Optional draw callback
 }
 
 // NewModal creates a new modal with initial view.
@@ -66,6 +68,11 @@ func (m *Modal) Update() {
 
 	m.handleDragging()
 
+	// Update children
+	for _, child := range m.Children {
+		child.Update()
+	}
+
 	if m.CloseButton.IsJustClicked() && !m.dragging {
 		m.Visible = false
 		if m.OnClose != nil {
@@ -74,6 +81,9 @@ func (m *Modal) Update() {
 		return
 	}
 
+	if m.OnUpdate != nil {
+		m.OnUpdate()
+	}
 }
 
 func (m *Modal) handleDragging() {
@@ -155,6 +165,10 @@ func (m *Modal) Draw(screen *ebiten.Image, theme *theming.Theme) {
 	// Draw children
 	for _, child := range m.Children {
 		child.Draw(m.offscreen, theme)
+	}
+
+	if m.OnDraw != nil {
+		m.OnDraw(m.offscreen, theme)
 	}
 
 	// Draw offscreen buffer to screen at modal position

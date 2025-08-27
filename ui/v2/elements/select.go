@@ -11,15 +11,16 @@ import (
 	theming "github.com/mechanical-lich/mlge/ui/v2/theming"
 )
 
+// Represents a dropdown select box element.
 type SelectBox struct {
 	ElementBase
 	Options      []string
-	Selected     int
+	Selected     int // Currently selected option
 	Open         bool
 	ScrollOffset int
 	VisibleItems int
 	ItemHeight   int
-	OnChange     func(selected int)
+	OnChange     func(selected int) // Optional onchange handler function
 
 	// Cached images to avoid per-frame allocations
 	dropdownBg     *ebiten.Image
@@ -36,6 +37,7 @@ type SelectBox struct {
 	scrollThumbH   int
 }
 
+// Creates a new SelectBox with the given parameters.
 func NewSelectBox(name string, x, y, width, visibleItems int, options []string) *SelectBox {
 	_, h := text.Measure("A", 16)
 	return &SelectBox{
@@ -218,6 +220,7 @@ func ebitenutilDrawTriangle(screen *ebiten.Image, x, y, size int, clr color.Colo
 	screen.DrawTriangles(vs, is, ebiten.NewImage(1, 1), &ebiten.DrawTrianglesOptions{FillRule: ebiten.EvenOdd})
 }
 
+// Sets the options for the select box.
 func (s *SelectBox) SetOptions(options []string) {
 	s.Options = options
 	if s.Selected >= len(options) {
