@@ -20,6 +20,7 @@ type Game struct {
 	dropdownDemo    *minui.Panel
 	toolbar         *minui.Panel
 	dropdownVisible bool
+	progressBar     *minui.ProgressBar
 }
 
 func NewGame() *Game {
@@ -30,11 +31,37 @@ func NewGame() *Game {
 	g.setupToolbar()
 	g.setupFileBrowserDemo()
 	g.setupDropdownDemo()
+	g.setupProgressDemo()
 
 	// Start with modal hidden
 	g.fileBrowser.SetVisible(false)
 
 	return g
+}
+
+func (g *Game) setupProgressDemo() {
+	// Floating progress bar near the bottom-left of the window
+	pb := minui.NewProgressBar("mainProgress")
+	pb.SetBounds(minui.Rect{X: 20, Y: 700, Width: 400, Height: 20})
+	pb.ShowPercent = true
+
+	incBtn := minui.NewButton("incProgress", "Inc")
+	incBtn.SetBounds(minui.Rect{X: 430, Y: 696, Width: 60, Height: 28})
+	incBtn.OnClick = func() {
+		v := pb.GetValue()
+		pb.SetValue(v + 0.1)
+	}
+
+	resetBtn := minui.NewButton("resetProgress", "Reset")
+	resetBtn.SetBounds(minui.Rect{X: 500, Y: 696, Width: 60, Height: 28})
+	resetBtn.OnClick = func() {
+		pb.SetValue(0)
+	}
+
+	g.gui.AddElement(pb)
+	g.gui.AddElement(incBtn)
+	g.gui.AddElement(resetBtn)
+	g.progressBar = pb
 }
 
 func (g *Game) setupToolbar() {
