@@ -2,6 +2,7 @@ package resource
 
 import (
 	"image"
+	"log/slog"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -20,7 +21,12 @@ func GetSubImage(name string, x, y, width, height int) *ebiten.Image {
 	if img, found := subImageCache[cacheKey]; found {
 		return img
 	}
-	img := Textures[name].SubImage(image.Rect(x, y, x+width, y+height)).(*ebiten.Image)
+	tex, ok := Textures[name]
+	if !ok {
+		slog.Error("GetSubImage: texture not found", "name", name)
+		return nil
+	}
+	img := tex.SubImage(image.Rect(x, y, x+width, y+height)).(*ebiten.Image)
 	subImageCache[cacheKey] = img
 	return img
 }
