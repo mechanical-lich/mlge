@@ -5,6 +5,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/mechanical-lich/mlge/event"
 	"github.com/mechanical-lich/mlge/text/v2"
 )
 
@@ -87,6 +88,13 @@ func (lb *ListBox) Update() {
 			if lb.OnSelect != nil {
 				lb.OnSelect(lb.SelectedIndex, lb.Items[lb.SelectedIndex])
 			}
+			// Fire event
+			event.GetQueuedInstance().QueueEvent(ListBoxSelectEvent{
+				ListBoxID:     lb.GetID(),
+				ListBox:       lb,
+				SelectedIndex: lb.SelectedIndex,
+				SelectedItem:  lb.Items[lb.SelectedIndex],
+			})
 		}
 	}
 
@@ -102,9 +110,9 @@ func (lb *ListBox) Update() {
 			Height: lb.bounds.Height,
 		}
 		contentBounds := GetContentBounds(absBounds, lb.GetComputedStyle())
-		
+
 		totalHeight := len(lb.Items) * lb.itemHeight
-		
+
 		// Only allow scrolling if content is larger than visible area
 		if totalHeight > contentBounds.Height {
 			lb.scrollOffset -= int(dy * 20)
@@ -122,6 +130,23 @@ func (lb *ListBox) Update() {
 // Layout calculates dimensions
 func (lb *ListBox) Layout() {
 	style := lb.GetComputedStyle()
+
+	// Apply width/height from style if specified
+	width := lb.bounds.Width
+	height := lb.bounds.Height
+
+	if style.Width != nil {
+		width = *style.Width
+	}
+	if style.Height != nil {
+		height = *style.Height
+	}
+
+	// Apply min/max size constraints
+	width, height = ApplySizeConstraints(width, height, style)
+
+	lb.bounds.Width = width
+	lb.bounds.Height = height
 
 	// Calculate visible items
 	contentBounds := GetContentBounds(lb.bounds, style)

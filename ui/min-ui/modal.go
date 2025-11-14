@@ -5,6 +5,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/mechanical-lich/mlge/event"
 	"github.com/mechanical-lich/mlge/text/v2"
 )
 
@@ -20,6 +21,8 @@ type Modal struct {
 	dragOffsetY int
 
 	titleBarHeight int
+	initialWidth   int // Store initial width as minimum
+	initialHeight  int // Store initial height as minimum
 }
 
 // NewModal creates a new modal dialog
@@ -29,6 +32,8 @@ func NewModal(id, title string, width, height int) *Modal {
 		Title:          title,
 		Closeable:      true,
 		titleBarHeight: 30,
+		initialWidth:   width,
+		initialHeight:  height,
 	}
 
 	modal.SetSize(width, height)
@@ -108,6 +113,11 @@ func (m *Modal) Update() {
 				if m.OnClose != nil {
 					m.OnClose()
 				}
+				// Fire event
+				event.GetQueuedInstance().QueueEvent(ModalCloseEvent{
+					ModalID: m.GetID(),
+					Modal:   m,
+				})
 				m.visible = false
 				return
 			}
@@ -128,19 +138,109 @@ func (m *Modal) Layout() {
 
 	style := m.GetComputedStyle()
 
-	// Content area is below title bar
-	contentBounds := GetContentBounds(m.bounds, style)
-	contentBounds.Y += m.titleBarHeight
-	contentBounds.Height -= m.titleBarHeight
-
-	// The children should already have their positions set relative to modal's content area
-	// We just need to ensure they're offset by the modal's position
-	// Children's X,Y are relative to the modal's content area (0,0) at the content start
-
-	// Just layout the children - their positions are already relative to content area
+	// First, layout all children to get their sizes
 	for _, child := range m.children {
 		child.Layout()
 	}
+
+	// Calculate required size based on children
+	contentWidth, contentHeight := m.calculateContentSize()
+
+	// Add padding to content size
+	if style.Padding != nil {
+		contentWidth += style.Padding.Left + style.Padding.Right
+		contentHeight += style.Padding.Top + style.Padding.Bottom
+	}
+
+	// Add border width
+	if style.BorderWidth != nil {
+		contentWidth += *style.BorderWidth * 2
+		contentHeight += *style.BorderWidth * 2
+	}
+
+	// Add title bar height
+	contentHeight += m.titleBarHeight
+
+	// Start with the larger of content size or initial size
+	width := m.initialWidth
+	height := m.initialHeight
+
+	if contentWidth > width {
+		width = contentWidth
+	}
+	if contentHeight > height {
+		height = contentHeight
+	}
+
+	// Apply explicit width/height from style if specified (overrides auto-sizing)
+	if style.Width != nil {
+		width = *style.Width
+	}
+	if style.Height != nil {
+		height = *style.Height
+	}
+
+	// Apply min size constraints (use initial size as minimum if no explicit min set)
+	if style.MinWidth == nil {
+		minWidth := m.initialWidth
+		style.MinWidth = &minWidth
+	}
+	if style.MinHeight == nil {
+		minHeight := m.initialHeight
+		style.MinHeight = &minHeight
+	}
+
+	// Apply min/max size constraints
+	width, height = ApplySizeConstraints(width, height, style)
+
+	m.bounds.Width = width
+	m.bounds.Height = height
+}
+
+// calculateContentSize calculates the required size to fit all children
+func (m *Modal) calculateContentSize() (int, int) {
+	if len(m.children) == 0 {
+		return 0, 0
+	}
+
+	maxRight := 0
+	maxBottom := 0
+
+	for _, child := range m.children {
+		childBounds := child.GetBounds()
+		childStyle := child.GetComputedStyle()
+
+		// Start with the child's position and size
+		right := childBounds.X + childBounds.Width
+		bottom := childBounds.Y + childBounds.Height
+
+		// Add child's padding (already included in child bounds via GetContentBounds, but borders/margins are not)
+		// Note: padding is already accounted for in the child's width/height from Layout()
+
+		// Add child's border width
+		if childStyle.BorderWidth != nil {
+			// Borders are typically already included in the child's Layout calculation
+			// but we should verify the child's right edge includes it
+		}
+
+		// Add child's margin
+		if childStyle.Margin != nil {
+			right += childStyle.Margin.Right
+			bottom += childStyle.Margin.Bottom
+		}
+
+		if right > maxRight {
+			maxRight = right
+		}
+		if bottom > maxBottom {
+			maxBottom = bottom
+		}
+	}
+
+	// Add some default padding to ensure content isn't flush against edges
+	const defaultContentPadding = 0 // Don't add extra - rely on modal's padding
+
+	return maxRight + defaultContentPadding, maxBottom + defaultContentPadding
 }
 
 // Draw draws the modal

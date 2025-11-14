@@ -74,6 +74,69 @@ func NewEdgeInsetsTRBL(top, right, bottom, left int) *EdgeInsets {
 	return &EdgeInsets{Top: top, Right: right, Bottom: bottom, Left: left}
 }
 
+// ApplySizeConstraints applies min/max width and height constraints to a size
+func ApplySizeConstraints(width, height int, style *Style) (int, int) {
+	if style == nil {
+		return width, height
+	}
+
+	// Apply min width
+	if style.MinWidth != nil && width < *style.MinWidth {
+		width = *style.MinWidth
+	}
+
+	// Apply max width
+	if style.MaxWidth != nil && width > *style.MaxWidth {
+		width = *style.MaxWidth
+	}
+
+	// Apply min height
+	if style.MinHeight != nil && height < *style.MinHeight {
+		height = *style.MinHeight
+	}
+
+	// Apply max height
+	if style.MaxHeight != nil && height > *style.MaxHeight {
+		height = *style.MaxHeight
+	}
+
+	return width, height
+}
+
+// ClampWidth applies min/max width constraints
+func ClampWidth(width int, style *Style) int {
+	if style == nil {
+		return width
+	}
+
+	if style.MinWidth != nil && width < *style.MinWidth {
+		width = *style.MinWidth
+	}
+
+	if style.MaxWidth != nil && width > *style.MaxWidth {
+		width = *style.MaxWidth
+	}
+
+	return width
+}
+
+// ClampHeight applies min/max height constraints
+func ClampHeight(height int, style *Style) int {
+	if style == nil {
+		return height
+	}
+
+	if style.MinHeight != nil && height < *style.MinHeight {
+		height = *style.MinHeight
+	}
+
+	if style.MaxHeight != nil && height > *style.MaxHeight {
+		height = *style.MaxHeight
+	}
+
+	return height
+}
+
 // TextAlignment represents horizontal text alignment
 type TextAlignment int
 
@@ -140,8 +203,9 @@ func DefaultStyle() *Style {
 	}
 }
 
-// Merge creates a new style by merging this style with a parent style
-// Child style properties override parent style properties
+// Merge combines this style with a parent style
+// This is for parent-child inheritance in the element hierarchy
+// Only inheritable properties (fonts, colors) cascade from parent
 func (s *Style) Merge(parent *Style) *Style {
 	if parent == nil {
 		return s
@@ -149,66 +213,31 @@ func (s *Style) Merge(parent *Style) *Style {
 
 	merged := &Style{}
 
-	// Helper to pick child over parent
+	// Layout properties - don't inherit (element-specific)
 	merged.Width = s.Width
-	if merged.Width == nil {
-		merged.Width = parent.Width
-	}
-
 	merged.Height = s.Height
-	if merged.Height == nil {
-		merged.Height = parent.Height
-	}
-
 	merged.MinWidth = s.MinWidth
-	if merged.MinWidth == nil {
-		merged.MinWidth = parent.MinWidth
-	}
-
 	merged.MinHeight = s.MinHeight
-	if merged.MinHeight == nil {
-		merged.MinHeight = parent.MinHeight
-	}
-
 	merged.MaxWidth = s.MaxWidth
-	if merged.MaxWidth == nil {
-		merged.MaxWidth = parent.MaxWidth
-	}
-
 	merged.MaxHeight = s.MaxHeight
-	if merged.MaxHeight == nil {
-		merged.MaxHeight = parent.MaxHeight
-	}
 
 	merged.Padding = s.Padding
-	if merged.Padding == nil {
-		merged.Padding = parent.Padding
-	}
+	// Don't inherit padding - it's element-specific
 
 	merged.Margin = s.Margin
-	if merged.Margin == nil {
-		merged.Margin = parent.Margin
-	}
+	// Don't inherit margin - it's element-specific
 
 	merged.BorderWidth = s.BorderWidth
-	if merged.BorderWidth == nil {
-		merged.BorderWidth = parent.BorderWidth
-	}
+	// Don't inherit border width - it's element-specific
 
 	merged.BorderRadius = s.BorderRadius
-	if merged.BorderRadius == nil {
-		merged.BorderRadius = parent.BorderRadius
-	}
+	// Don't inherit border radius - it's element-specific
 
 	merged.BackgroundColor = s.BackgroundColor
-	if merged.BackgroundColor == nil {
-		merged.BackgroundColor = parent.BackgroundColor
-	}
+	// Don't inherit background color - it's element-specific
 
 	merged.BorderColor = s.BorderColor
-	if merged.BorderColor == nil {
-		merged.BorderColor = parent.BorderColor
-	}
+	// Don't inherit border color - it's element-specific
 
 	merged.ForegroundColor = s.ForegroundColor
 	if merged.ForegroundColor == nil {
@@ -216,9 +245,7 @@ func (s *Style) Merge(parent *Style) *Style {
 	}
 
 	merged.BackgroundImage = s.BackgroundImage
-	if merged.BackgroundImage == nil {
-		merged.BackgroundImage = parent.BackgroundImage
-	}
+	// Don't inherit background image - it's element-specific
 
 	merged.FontSize = s.FontSize
 	if merged.FontSize == nil {
@@ -300,6 +327,136 @@ func (s *Style) Merge(parent *Style) *Style {
 	} else {
 		merged.FocusStyle = parent.FocusStyle
 	}
+
+	return merged
+}
+
+// MergeState combines a state style with its base style
+// This is for state-based styling (hover, active, etc.)
+// All properties from base should be inherited unless overridden
+func (s *Style) MergeState(base *Style) *Style {
+	if base == nil {
+		return s
+	}
+
+	merged := &Style{}
+
+	// For state styles, inherit ALL properties from base unless overridden
+	merged.Width = s.Width
+	if merged.Width == nil {
+		merged.Width = base.Width
+	}
+
+	merged.Height = s.Height
+	if merged.Height == nil {
+		merged.Height = base.Height
+	}
+
+	merged.MinWidth = s.MinWidth
+	if merged.MinWidth == nil {
+		merged.MinWidth = base.MinWidth
+	}
+
+	merged.MinHeight = s.MinHeight
+	if merged.MinHeight == nil {
+		merged.MinHeight = base.MinHeight
+	}
+
+	merged.MaxWidth = s.MaxWidth
+	if merged.MaxWidth == nil {
+		merged.MaxWidth = base.MaxWidth
+	}
+
+	merged.MaxHeight = s.MaxHeight
+	if merged.MaxHeight == nil {
+		merged.MaxHeight = base.MaxHeight
+	}
+
+	merged.Padding = s.Padding
+	if merged.Padding == nil {
+		merged.Padding = base.Padding
+	}
+
+	merged.Margin = s.Margin
+	if merged.Margin == nil {
+		merged.Margin = base.Margin
+	}
+
+	merged.BorderWidth = s.BorderWidth
+	if merged.BorderWidth == nil {
+		merged.BorderWidth = base.BorderWidth
+	}
+
+	merged.BorderRadius = s.BorderRadius
+	if merged.BorderRadius == nil {
+		merged.BorderRadius = base.BorderRadius
+	}
+
+	merged.BackgroundColor = s.BackgroundColor
+	if merged.BackgroundColor == nil {
+		merged.BackgroundColor = base.BackgroundColor
+	}
+
+	merged.BorderColor = s.BorderColor
+	if merged.BorderColor == nil {
+		merged.BorderColor = base.BorderColor
+	}
+
+	merged.ForegroundColor = s.ForegroundColor
+	if merged.ForegroundColor == nil {
+		merged.ForegroundColor = base.ForegroundColor
+	}
+
+	merged.BackgroundImage = s.BackgroundImage
+	if merged.BackgroundImage == nil {
+		merged.BackgroundImage = base.BackgroundImage
+	}
+
+	merged.FontSize = s.FontSize
+	if merged.FontSize == nil {
+		merged.FontSize = base.FontSize
+	}
+
+	merged.FontBold = s.FontBold
+	if merged.FontBold == nil {
+		merged.FontBold = base.FontBold
+	}
+
+	merged.FontItalic = s.FontItalic
+	if merged.FontItalic == nil {
+		merged.FontItalic = base.FontItalic
+	}
+
+	merged.TextAlign = s.TextAlign
+	if merged.TextAlign == nil {
+		merged.TextAlign = base.TextAlign
+	}
+
+	merged.VertAlign = s.VertAlign
+	if merged.VertAlign == nil {
+		merged.VertAlign = base.VertAlign
+	}
+
+	merged.Align = s.Align
+	if merged.Align == nil {
+		merged.Align = base.Align
+	}
+
+	merged.Opacity = s.Opacity
+	if merged.Opacity == nil {
+		merged.Opacity = base.Opacity
+	}
+
+	merged.Visible = s.Visible
+	if merged.Visible == nil {
+		merged.Visible = base.Visible
+	}
+
+	// Don't merge state styles recursively for state merging
+	merged.HoverStyle = s.HoverStyle
+	merged.ActiveStyle = s.ActiveStyle
+	merged.DisabledStyle = s.DisabledStyle
+	merged.FocusStyle = s.FocusStyle
 
 	return merged
 }
@@ -420,19 +577,19 @@ func (s *Style) GetComputedStyle(hovered, active, disabled, focused bool) *Style
 	base := s
 
 	if disabled && s.DisabledStyle != nil {
-		return s.DisabledStyle.Merge(base)
+		return s.DisabledStyle.MergeState(base)
 	}
 
 	if active && s.ActiveStyle != nil {
-		return s.ActiveStyle.Merge(base)
+		return s.ActiveStyle.MergeState(base)
 	}
 
 	if focused && s.FocusStyle != nil {
-		return s.FocusStyle.Merge(base)
+		return s.FocusStyle.MergeState(base)
 	}
 
 	if hovered && s.HoverStyle != nil {
-		return s.HoverStyle.Merge(base)
+		return s.HoverStyle.MergeState(base)
 	}
 
 	return base

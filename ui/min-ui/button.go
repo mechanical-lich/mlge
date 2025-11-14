@@ -5,6 +5,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/mechanical-lich/mlge/event"
 	"github.com/mechanical-lich/mlge/text/v2"
 )
 
@@ -78,6 +79,11 @@ func (b *Button) Update() {
 			if b.OnClick != nil {
 				b.OnClick()
 			}
+			// Fire event
+			event.GetQueuedInstance().QueueEvent(ButtonClickEvent{
+				ButtonID: b.GetID(),
+				Button:   b,
+			})
 		}
 		b.pressed = false
 	}
@@ -115,6 +121,9 @@ func (b *Button) Layout() {
 	if style.Height != nil {
 		textHeight = *style.Height
 	}
+
+	// Apply min/max size constraints
+	textWidth, textHeight = ApplySizeConstraints(textWidth, textHeight, style)
 
 	b.bounds.Width = textWidth
 	b.bounds.Height = textHeight

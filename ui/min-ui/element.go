@@ -223,10 +223,20 @@ func (e *ElementBase) SetPosition(x, y int) {
 	e.bounds.Y = y
 }
 
+// GetPosition returns the position
+func (e *ElementBase) GetPosition() (int, int) {
+	return e.bounds.X, e.bounds.Y
+}
+
 // SetSize sets the size
 func (e *ElementBase) SetSize(width, height int) {
 	e.bounds.Width = width
 	e.bounds.Height = height
+}
+
+// GetSize returns the size
+func (e *ElementBase) GetSize() (int, int) {
+	return e.bounds.Width, e.bounds.Height
 }
 
 // GetAbsolutePosition returns the absolute screen position

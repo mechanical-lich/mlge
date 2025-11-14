@@ -52,7 +52,7 @@ func (l *Label) Layout() {
 	// Split text by newlines to calculate proper dimensions
 	lines := strings.Split(l.Text, "\n")
 	lineHeight := fontSize + 4 // Line spacing
-	
+
 	// Find the longest line for width calculation
 	maxLineLen := 0
 	for _, line := range lines {
@@ -60,7 +60,7 @@ func (l *Label) Layout() {
 			maxLineLen = len(line)
 		}
 	}
-	
+
 	// Estimate text size based on longest line and number of lines
 	textWidth := maxLineLen * fontSize * 6 / 10
 	textHeight := (len(lines) * lineHeight) - 4 + 6 // Remove spacing from last line, add base padding
@@ -78,6 +78,9 @@ func (l *Label) Layout() {
 	if style.Height != nil {
 		textHeight = *style.Height
 	}
+
+	// Apply min/max size constraints
+	textWidth, textHeight = ApplySizeConstraints(textWidth, textHeight, style)
 
 	l.bounds.Width = textWidth
 	l.bounds.Height = textHeight

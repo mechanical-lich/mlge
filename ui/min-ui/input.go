@@ -5,6 +5,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/mechanical-lich/mlge/event"
 	"github.com/mechanical-lich/mlge/text/v2"
 )
 
@@ -79,15 +80,16 @@ func (ti *TextInput) Update() {
 		return
 	}
 
+	oldText := ti.Text
+	textChanged := false
+
 	// Handle text input
 	runes := ebiten.AppendInputChars(nil)
 	for _, r := range runes {
 		if r >= 32 && r != 127 { // Printable characters
 			ti.Text = ti.Text[:ti.cursorPos] + string(r) + ti.Text[ti.cursorPos:]
 			ti.cursorPos++
-			if ti.OnChange != nil {
-				ti.OnChange(ti.Text)
-			}
+			textChanged = true
 		}
 	}
 
@@ -95,17 +97,26 @@ func (ti *TextInput) Update() {
 	if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) && ti.cursorPos > 0 {
 		ti.Text = ti.Text[:ti.cursorPos-1] + ti.Text[ti.cursorPos:]
 		ti.cursorPos--
-		if ti.OnChange != nil {
-			ti.OnChange(ti.Text)
-		}
+		textChanged = true
 	}
 
 	// Handle delete
 	if inpututil.IsKeyJustPressed(ebiten.KeyDelete) && ti.cursorPos < len(ti.Text) {
 		ti.Text = ti.Text[:ti.cursorPos] + ti.Text[ti.cursorPos+1:]
+		textChanged = true
+	}
+
+	// Fire change event if text changed
+	if textChanged {
 		if ti.OnChange != nil {
 			ti.OnChange(ti.Text)
 		}
+		event.GetQueuedInstance().QueueEvent(TextInputChangeEvent{
+			InputID: ti.GetID(),
+			Input:   ti,
+			Text:    ti.Text,
+			OldText: oldText,
+		})
 	}
 
 	// Handle left/right arrows
@@ -129,6 +140,12 @@ func (ti *TextInput) Update() {
 		if ti.OnSubmit != nil {
 			ti.OnSubmit(ti.Text)
 		}
+		// Fire submit event
+		event.GetQueuedInstance().QueueEvent(TextInputSubmitEvent{
+			InputID: ti.GetID(),
+			Input:   ti,
+			Text:    ti.Text,
+		})
 		ti.focused = false
 		ti.SetFocused(false)
 	}
@@ -144,13 +161,23 @@ func (ti *TextInput) Update() {
 func (ti *TextInput) Layout() {
 	style := ti.GetComputedStyle()
 
+	// Start with current bounds
+	width := ti.bounds.Width
+	height := ti.bounds.Height
+
 	// Apply width/height from style
 	if style.Width != nil {
-		ti.bounds.Width = *style.Width
+		width = *style.Width
 	}
 	if style.Height != nil {
-		ti.bounds.Height = *style.Height
+		height = *style.Height
 	}
+
+	// Apply min/max size constraints
+	width, height = ApplySizeConstraints(width, height, style)
+
+	ti.bounds.Width = width
+	ti.bounds.Height = height
 }
 
 // Draw draws the text input
@@ -269,9 +296,18 @@ func (cb *Checkbox) Update() {
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		mx, my := ebiten.CursorPosition()
 		if cb.IsWithin(mx, my) {
+			oldChecked := cb.Checked
 			cb.Checked = !cb.Checked
 			if cb.OnChange != nil {
 				cb.OnChange(cb.Checked)
+			}
+			// Fire event
+			if oldChecked != cb.Checked {
+				event.GetQueuedInstance().QueueEvent(CheckboxChangeEvent{
+					CheckboxID: cb.GetID(),
+					Checkbox:   cb,
+					Checked:    cb.Checked,
+				})
 			}
 		}
 	}
@@ -279,7 +315,25 @@ func (cb *Checkbox) Update() {
 
 // Layout calculates dimensions
 func (cb *Checkbox) Layout() {
-	// Checkbox has fixed size
+	style := cb.GetComputedStyle()
+
+	// Start with default checkbox size
+	width := cb.bounds.Width
+	height := cb.bounds.Height
+
+	// Apply width/height from style if specified
+	if style.Width != nil {
+		width = *style.Width
+	}
+	if style.Height != nil {
+		height = *style.Height
+	}
+
+	// Apply min/max size constraints
+	width, height = ApplySizeConstraints(width, height, style)
+
+	cb.bounds.Width = width
+	cb.bounds.Height = height
 }
 
 // Draw draws the checkbox

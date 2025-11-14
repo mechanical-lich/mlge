@@ -59,6 +59,24 @@ func (p *Panel) Layout() {
 	}
 
 	style := p.GetComputedStyle()
+
+	// Apply width/height from style if specified
+	width := p.bounds.Width
+	height := p.bounds.Height
+
+	if style.Width != nil {
+		width = *style.Width
+	}
+	if style.Height != nil {
+		height = *style.Height
+	}
+
+	// Apply min/max size constraints
+	width, height = ApplySizeConstraints(width, height, style)
+
+	p.bounds.Width = width
+	p.bounds.Height = height
+
 	contentBounds := GetContentBounds(p.bounds, style)
 
 	switch p.layoutDirection {
