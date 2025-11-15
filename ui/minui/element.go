@@ -137,7 +137,8 @@ func (e *ElementBase) GetChildren() []Element {
 // AddChild adds a child element
 func (e *ElementBase) AddChild(child Element) {
 	e.children = append(e.children, child)
-	child.SetParent(child.GetParent()) // Will be set by the concrete element
+	// Parent should be set by the concrete container implementation that knows the
+	// correct Element type (see Panel.AddChild, Modal.AddChild, etc.).
 }
 
 // RemoveChild removes a child element

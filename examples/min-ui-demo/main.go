@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	minui "github.com/mechanical-lich/mlge/ui/min-ui"
+	minui "github.com/mechanical-lich/mlge/ui/minui"
 )
 
 const (
@@ -121,9 +121,16 @@ func (g *Game) setupToolbar() {
 
 	// Button to show radio button demo
 	radioBtn := minui.NewButton("radioDemo", "Radio")
-	radioBtn.SetBounds(minui.Rect{X: 970, Y: 12, Width: 70, Height: 36})
+	radioBtn.SetBounds(minui.Rect{X: 870, Y: 12, Width: 70, Height: 36})
 	radioBtn.OnClick = func() {
 		g.createRadioButtonDemo()
+	}
+
+	// Button to show layout demo
+	layoutBtn := minui.NewButton("layoutDemo", "Layout")
+	layoutBtn.SetBounds(minui.Rect{X: 950, Y: 12, Width: 80, Height: 36})
+	layoutBtn.OnClick = func() {
+		g.createLayoutDemo()
 	}
 
 	toolbar.AddChild(titleLabel)
@@ -132,6 +139,7 @@ func (g *Game) setupToolbar() {
 	toolbar.AddChild(newModalBtn)
 	toolbar.AddChild(sizeConstraintBtn)
 	toolbar.AddChild(radioBtn)
+	toolbar.AddChild(layoutBtn)
 
 	g.toolbar = toolbar
 	g.gui.AddElement(toolbar)
@@ -275,7 +283,7 @@ func (g *Game) createRadioButtonDemo() {
 	groupLabel := minui.NewLabel("groupLabel", "Radio Group (select one):")
 	groupLabel.SetBounds(minui.Rect{X: 20, Y: 60, Width: 300, Height: 20})
 
-	// Create radio group
+	// Create radio group (now it's an Element!)
 	colorGroup := minui.NewRadioGroup("colorGroup")
 
 	// Result label
@@ -298,7 +306,7 @@ func (g *Game) createRadioButtonDemo() {
 	blueLabel := minui.NewLabel("blueLabel", "Blue")
 	blueLabel.SetBounds(minui.Rect{X: 45, Y: 175, Width: 100, Height: 20})
 
-	// Add buttons to group
+	// Add buttons to group (no need to add them to modal separately)
 	colorGroup.AddButton(redRadio)
 	colorGroup.AddButton(greenRadio)
 	colorGroup.AddButton(blueRadio)
@@ -342,11 +350,9 @@ func (g *Game) createRadioButtonDemo() {
 	radioModal.AddChild(title)
 	radioModal.AddChild(groupLabel)
 	radioModal.AddChild(selectedLabel)
-	radioModal.AddChild(redRadio)
+	radioModal.AddChild(colorGroup) // Add the group itself, not individual buttons
 	radioModal.AddChild(redLabel)
-	radioModal.AddChild(greenRadio)
 	radioModal.AddChild(greenLabel)
-	radioModal.AddChild(blueRadio)
 	radioModal.AddChild(blueLabel)
 	radioModal.AddChild(standaloneLabel)
 	radioModal.AddChild(option1Radio)
@@ -531,6 +537,168 @@ func (g *Game) setupDropdownDemo() {
 	g.dropdownDemo = panel
 	// Don't add it by default - only show file browser
 	// g.gui.AddElement(panel)
+}
+
+func (g *Game) createLayoutDemo() {
+	demoModal := minui.NewModal("layoutDemo", "HBox/VBox Layout Demo", 650, 550)
+	demoModal.SetPosition(187, 109)
+
+	// Title
+	title := minui.NewLabel("layoutTitle", "Automatic Layout Containers")
+	title.SetBounds(minui.Rect{X: 20, Y: 20, Width: 610, Height: 30})
+
+	// Description
+	desc := minui.NewLabel("layoutDesc", "HBox and VBox automatically position children without manual bounds.")
+	desc.SetBounds(minui.Rect{X: 20, Y: 50, Width: 610, Height: 20})
+
+	// HBox Example
+	hboxLabel := minui.NewLabel("hboxLabel", "HBox Example (horizontal layout with 10px spacing):")
+	hboxLabel.SetBounds(minui.Rect{X: 20, Y: 85, Width: 610, Height: 20})
+
+	// Create HBox with buttons
+	hbox := minui.NewHBox("buttonRow")
+	hbox.SetBounds(minui.Rect{X: 20, Y: 110, Width: 0, Height: 0}) // Position relative to modal, size auto-calculated
+	hbox.Spacing = 10
+
+	// Style the HBox with a light background
+	hboxBg := color.Color(color.RGBA{240, 240, 250, 255})
+	hboxBorder := color.Color(color.RGBA{180, 180, 200, 255})
+	hboxBorderWidth := 1
+	hboxPadding := 10
+	hbox.GetStyle().BackgroundColor = &hboxBg
+	hbox.GetStyle().BorderColor = &hboxBorder
+	hbox.GetStyle().BorderWidth = &hboxBorderWidth
+	hbox.GetStyle().Padding = &minui.EdgeInsets{Top: hboxPadding, Right: hboxPadding, Bottom: hboxPadding, Left: hboxPadding}
+
+	// Add buttons to HBox (they'll be positioned automatically)
+	btn1 := minui.NewButton("hboxBtn1", "First")
+	btn1.SetBounds(minui.Rect{Width: 80, Height: 32})
+
+	btn2 := minui.NewButton("hboxBtn2", "Second")
+	btn2.SetBounds(minui.Rect{Width: 90, Height: 32})
+
+	btn3 := minui.NewButton("hboxBtn3", "Third")
+	btn3.SetBounds(minui.Rect{Width: 70, Height: 32})
+
+	btn4 := minui.NewButton("hboxBtn4", "Fourth")
+	btn4.SetBounds(minui.Rect{Width: 85, Height: 32})
+
+	hbox.AddChild(btn1)
+	hbox.AddChild(btn2)
+	hbox.AddChild(btn3)
+	hbox.AddChild(btn4)
+
+	// VBox Example
+	vboxLabel := minui.NewLabel("vboxLabel", "VBox Example (vertical layout with 8px spacing):")
+	vboxLabel.SetBounds(minui.Rect{X: 20, Y: 190, Width: 610, Height: 20})
+
+	// Create VBox with labels and inputs
+	vbox := minui.NewVBox("formFields")
+	vbox.SetBounds(minui.Rect{X: 20, Y: 215, Width: 0, Height: 0}) // Position relative to modal, size auto-calculated
+	vbox.Spacing = 8
+
+	// Style the VBox
+	vboxBg := color.Color(color.RGBA{250, 250, 240, 255})
+	vboxBorder := color.Color(color.RGBA{200, 200, 180, 255})
+	vboxBorderWidth := 1
+	vboxPadding := 12
+	vbox.GetStyle().BackgroundColor = &vboxBg
+	vbox.GetStyle().BorderColor = &vboxBorder
+	vbox.GetStyle().BorderWidth = &vboxBorderWidth
+	vbox.GetStyle().Padding = &minui.EdgeInsets{Top: vboxPadding, Right: vboxPadding, Bottom: vboxPadding, Left: vboxPadding}
+
+	// Add form fields to VBox (they'll be stacked automatically)
+	nameLabel := minui.NewLabel("nameLabel", "Name:")
+	nameLabel.SetBounds(minui.Rect{Width: 300, Height: 20})
+
+	nameInput := minui.NewTextInput("nameInput", "Enter your name")
+	nameInput.SetBounds(minui.Rect{Width: 300, Height: 28})
+
+	emailLabel := minui.NewLabel("emailLabel", "Email:")
+	emailLabel.SetBounds(minui.Rect{Width: 300, Height: 20})
+
+	emailInput := minui.NewTextInput("emailInput", "Enter your email")
+	emailInput.SetBounds(minui.Rect{Width: 300, Height: 28})
+
+	msgLabel := minui.NewLabel("msgLabel", "Message:")
+	msgLabel.SetBounds(minui.Rect{Width: 300, Height: 20})
+
+	msgInput := minui.NewTextInput("msgInput", "Type a message...")
+	msgInput.SetBounds(minui.Rect{Width: 300, Height: 28})
+
+	vbox.AddChild(nameLabel)
+	vbox.AddChild(nameInput)
+	vbox.AddChild(emailLabel)
+	vbox.AddChild(emailInput)
+	vbox.AddChild(msgLabel)
+	vbox.AddChild(msgInput)
+
+	// Nested Example
+	nestedLabel := minui.NewLabel("nestedLabel", "Nested Example (VBox containing HBoxes):")
+	nestedLabel.SetBounds(minui.Rect{X: 20, Y: 420, Width: 610, Height: 20})
+
+	// Create a VBox that contains multiple HBoxes
+	nestedVBox := minui.NewVBox("nestedContainer")
+	nestedVBox.SetBounds(minui.Rect{X: 20, Y: 445, Width: 0, Height: 0}) // Position relative to modal, size auto-calculated
+	nestedVBox.Spacing = 5
+
+	nestedBg := color.Color(color.RGBA{245, 245, 245, 255})
+	nestedBorder := color.Color(color.RGBA{150, 150, 150, 255})
+	nestedBorderWidth := 1
+	nestedPadding := 8
+	nestedVBox.GetStyle().BackgroundColor = &nestedBg
+	nestedVBox.GetStyle().BorderColor = &nestedBorder
+	nestedVBox.GetStyle().BorderWidth = &nestedBorderWidth
+	nestedVBox.GetStyle().Padding = &minui.EdgeInsets{Top: nestedPadding, Right: nestedPadding, Bottom: nestedPadding, Left: nestedPadding}
+
+	// First row of buttons in nested container
+	row1 := minui.NewHBox("nestedRow1")
+	row1.Spacing = 5
+	row1Btn1 := minui.NewButton("nestedBtn1", "A")
+	row1Btn1.SetBounds(minui.Rect{Width: 50, Height: 28})
+	row1Btn2 := minui.NewButton("nestedBtn2", "B")
+	row1Btn2.SetBounds(minui.Rect{Width: 50, Height: 28})
+	row1Btn3 := minui.NewButton("nestedBtn3", "C")
+	row1Btn3.SetBounds(minui.Rect{Width: 50, Height: 28})
+	row1.AddChild(row1Btn1)
+	row1.AddChild(row1Btn2)
+	row1.AddChild(row1Btn3)
+
+	// Second row of buttons
+	row2 := minui.NewHBox("nestedRow2")
+	row2.Spacing = 5
+	row2Btn1 := minui.NewButton("nestedBtn4", "D")
+	row2Btn1.SetBounds(minui.Rect{Width: 50, Height: 28})
+	row2Btn2 := minui.NewButton("nestedBtn5", "E")
+	row2Btn2.SetBounds(minui.Rect{Width: 50, Height: 28})
+	row2Btn3 := minui.NewButton("nestedBtn6", "F")
+	row2Btn3.SetBounds(minui.Rect{Width: 50, Height: 28})
+	row2.AddChild(row2Btn1)
+	row2.AddChild(row2Btn2)
+	row2.AddChild(row2Btn3)
+
+	nestedVBox.AddChild(row1)
+	nestedVBox.AddChild(row2)
+
+	// Close button
+	closeBtn := minui.NewButton("closeLayoutDemo", "Close")
+	closeBtn.SetBounds(minui.Rect{X: 275, Y: 500, Width: 100, Height: 32})
+	closeBtn.OnClick = func() {
+		g.gui.RemoveModal(demoModal)
+	}
+
+	// Add all to modal
+	demoModal.AddChild(title)
+	demoModal.AddChild(desc)
+	demoModal.AddChild(hboxLabel)
+	demoModal.AddChild(hbox)
+	demoModal.AddChild(vboxLabel)
+	demoModal.AddChild(vbox)
+	demoModal.AddChild(nestedLabel)
+	demoModal.AddChild(nestedVBox)
+	demoModal.AddChild(closeBtn)
+
+	g.gui.AddModal(demoModal)
 }
 
 func (g *Game) Update() error {

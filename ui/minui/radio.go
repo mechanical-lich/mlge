@@ -7,6 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/mechanical-lich/mlge/event"
+	"github.com/mechanical-lich/mlge/text/v2"
 )
 
 // RadioButton is a circular selectable option
@@ -178,12 +179,31 @@ func (rb *RadioButton) Draw(screen *ebiten.Image) {
 		hoverColor := color.RGBA{220, 220, 230, 255}
 		vector.DrawFilledCircle(screen, centerX, centerY, radius-borderWidth, hoverColor, true)
 	}
+
+	// Draw label text to the right of the radio button
+	if rb.Label != "" {
+		fontSize := 14
+		if style.FontSize != nil {
+			fontSize = *style.FontSize
+		}
+
+		textColor := color.RGBA{0, 0, 0, 255}
+		if style.ForegroundColor != nil {
+			r, g, b, a := (*style.ForegroundColor).RGBA()
+			textColor = color.RGBA{R: uint8(r >> 8), G: uint8(g >> 8), B: uint8(b >> 8), A: uint8(a >> 8)}
+		}
+
+		// Position text to the right of the circle with some spacing
+		textX := absX + rb.bounds.Width + 5
+		textY := absY + (rb.bounds.Height-fontSize)/2
+		text.Draw(screen, rb.Label, float64(fontSize), textX, textY, textColor)
+	}
 }
 
-// RadioGroup manages a group of radio buttons where only one can be selected
+// RadioGroup manages a group of radio buttons where only one can be selected.
+// It is a full Element so it can be added to modals/panels directly.
 type RadioGroup struct {
-	id                string
-	buttons           []*RadioButton
+	*ElementBase
 	selectedID        string
 	OnSelectionChange func(selectedID string, selectedButton *RadioButton)
 }
@@ -191,27 +211,38 @@ type RadioGroup struct {
 // NewRadioGroup creates a new radio button group
 func NewRadioGroup(id string) *RadioGroup {
 	return &RadioGroup{
-		id:      id,
-		buttons: make([]*RadioButton, 0),
+		ElementBase: NewElementBase(id),
 	}
 }
 
-// GetID returns the group's ID
-func (rg *RadioGroup) GetID() string {
-	return rg.id
+// GetType returns the element type
+func (rg *RadioGroup) GetType() string {
+	return "RadioGroup"
 }
 
-// AddButton adds a radio button to the group
+// AddButton adds a radio button to the group as a child element
 func (rg *RadioGroup) AddButton(button *RadioButton) {
 	button.SetGroup(rg)
-	rg.buttons = append(rg.buttons, button)
+	rg.AddChild(button)
+}
+
+// AddChild overrides AddChild to ensure radio buttons added as children
+// are also linked to the group and have proper parent reference
+func (rg *RadioGroup) AddChild(el Element) {
+	if rb, ok := el.(*RadioButton); ok {
+		rb.SetGroup(rg)
+	}
+	rg.ElementBase.AddChild(el)
+	el.SetParent(rg)
 }
 
 // Select selects a specific radio button and deselects all others
 func (rg *RadioGroup) Select(button *RadioButton) {
-	// Deselect all buttons
-	for _, btn := range rg.buttons {
-		btn.Selected = false
+	// Deselect all buttons (iterate children)
+	for _, child := range rg.children {
+		if btn, ok := child.(*RadioButton); ok {
+			btn.Selected = false
+		}
 	}
 
 	// Select the specified button
@@ -225,7 +256,7 @@ func (rg *RadioGroup) Select(button *RadioButton) {
 
 	// Fire event
 	event.GetQueuedInstance().QueueEvent(RadioGroupChangeEvent{
-		RadioGroupID:   rg.id,
+		RadioGroupID:   rg.GetID(),
 		RadioGroup:     rg,
 		SelectedID:     button.GetID(),
 		SelectedButton: button,
@@ -234,19 +265,23 @@ func (rg *RadioGroup) Select(button *RadioButton) {
 
 // SelectByID selects a radio button by its ID
 func (rg *RadioGroup) SelectByID(id string) {
-	for _, btn := range rg.buttons {
-		if btn.GetID() == id {
-			rg.Select(btn)
-			return
+	for _, child := range rg.children {
+		if btn, ok := child.(*RadioButton); ok {
+			if btn.GetID() == id {
+				rg.Select(btn)
+				return
+			}
 		}
 	}
 }
 
 // GetSelected returns the currently selected radio button
 func (rg *RadioGroup) GetSelected() *RadioButton {
-	for _, btn := range rg.buttons {
-		if btn.Selected {
-			return btn
+	for _, child := range rg.children {
+		if btn, ok := child.(*RadioButton); ok {
+			if btn.Selected {
+				return btn
+			}
 		}
 	}
 	return nil
@@ -259,13 +294,50 @@ func (rg *RadioGroup) GetSelectedID() string {
 
 // GetButtons returns all radio buttons in the group
 func (rg *RadioGroup) GetButtons() []*RadioButton {
-	return rg.buttons
+	buttons := make([]*RadioButton, 0)
+	for _, child := range rg.children {
+		if btn, ok := child.(*RadioButton); ok {
+			buttons = append(buttons, btn)
+		}
+	}
+	return buttons
 }
 
 // Clear deselects all radio buttons in the group
 func (rg *RadioGroup) Clear() {
-	for _, btn := range rg.buttons {
-		btn.Selected = false
+	for _, child := range rg.children {
+		if btn, ok := child.(*RadioButton); ok {
+			btn.Selected = false
+		}
 	}
 	rg.selectedID = ""
+}
+
+// Update updates all child radio buttons
+func (rg *RadioGroup) Update() {
+	if !rg.visible {
+		return
+	}
+	for _, child := range rg.children {
+		child.Update()
+	}
+}
+
+// Layout lays out the group (children are positioned manually or by container)
+func (rg *RadioGroup) Layout() {
+	// RadioGroup doesn't enforce layout on children - they're positioned manually
+	// or by parent container. Just ensure children are laid out.
+	for _, child := range rg.children {
+		child.Layout()
+	}
+}
+
+// Draw draws all child radio buttons
+func (rg *RadioGroup) Draw(screen *ebiten.Image) {
+	if !rg.visible {
+		return
+	}
+	for _, child := range rg.children {
+		child.Draw(screen)
+	}
 }

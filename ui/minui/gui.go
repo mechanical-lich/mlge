@@ -124,3 +124,95 @@ func (g *GUI) findInElements(id string, elements []Element) Element {
 	}
 	return nil
 }
+
+// WithinModalBounds returns true if the given coordinates are inside any
+// visible modal. Used by game code to decide whether mouse input should be
+// intercepted by the UI.
+func (g *GUI) WithinModalBounds(mouseX, mouseY int) bool {
+	for _, m := range g.modals {
+		if !m.IsVisible() {
+			continue
+		}
+		if m.IsWithin(mouseX, mouseY) {
+			return true
+		}
+	}
+	return false
+}
+
+// GetMouseFocused returns true if any element (including modal contents)
+// currently reports hovered or focused state. This indicates the GUI is
+// capturing the mouse and game code should avoid handling mouse input.
+func (g *GUI) GetMouseFocused() bool {
+	// Check top-level elements
+	for _, e := range g.elements {
+		if elementHasFocusRecursive(e) {
+			return true
+		}
+	}
+
+	// Check visible modals
+	for _, m := range g.modals {
+		if !m.IsVisible() {
+			continue
+		}
+		if elementHasFocusRecursive(m) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// GetKeyboardFocused returns true if any element (including modals) currently
+// has keyboard focus (IsFocused). Game code can use this to decide whether
+// it should route keyboard input to the GUI or handle it itself.
+func (g *GUI) GetKeyboardFocused() bool {
+	for _, e := range g.elements {
+		if elementHasKeyboardFocusRecursive(e) {
+			return true
+		}
+	}
+	for _, m := range g.modals {
+		if !m.IsVisible() {
+			continue
+		}
+		if elementHasKeyboardFocusRecursive(m) {
+			return true
+		}
+	}
+	return false
+}
+
+// elementHasFocusRecursive checks an element and its children for hovered
+// or focused state.
+func elementHasFocusRecursive(e Element) bool {
+	if e == nil || !e.IsVisible() {
+		return false
+	}
+	if e.IsHovered() || e.IsFocused() {
+		return true
+	}
+	for _, c := range e.GetChildren() {
+		if elementHasFocusRecursive(c) {
+			return true
+		}
+	}
+	return false
+}
+
+// elementHasKeyboardFocusRecursive checks element and its children for keyboard focus only.
+func elementHasKeyboardFocusRecursive(e Element) bool {
+	if e == nil || !e.IsVisible() {
+		return false
+	}
+	if e.IsFocused() {
+		return true
+	}
+	for _, c := range e.GetChildren() {
+		if elementHasKeyboardFocusRecursive(c) {
+			return true
+		}
+	}
+	return false
+}
