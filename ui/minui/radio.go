@@ -2,6 +2,7 @@ package minui
 
 import (
 	"image/color"
+	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -325,11 +326,99 @@ func (rg *RadioGroup) Update() {
 
 // Layout lays out the group (children are positioned manually or by container)
 func (rg *RadioGroup) Layout() {
-	// RadioGroup doesn't enforce layout on children - they're positioned manually
-	// or by parent container. Just ensure children are laid out.
-	for _, child := range rg.children {
-		child.Layout()
+	// Layout children and position them horizontally within the group.
+	// This makes RadioGroup behave as a simple horizontal container so
+	// that adding radio buttons to the group without also adding them
+	// directly to a Panel/HBox will still render with spacing.
+	style := rg.GetComputedStyle()
+
+	paddingLeft := 0
+	paddingTop := 0
+	spacing := 8
+	if style != nil {
+		if style.Padding != nil {
+			paddingLeft = style.Padding.Left
+			paddingTop = style.Padding.Top
+		}
 	}
+
+	x := paddingLeft
+	maxRight := 0
+	maxBottom := 0
+
+	for _, child := range rg.children {
+		if !child.IsVisible() {
+			continue
+		}
+
+		// Let the child compute its preferred size first
+		child.Layout()
+		cb := child.GetBounds()
+		// Position the child relative to the group's content origin
+		child.SetBounds(Rect{X: x, Y: paddingTop, Width: cb.Width, Height: cb.Height})
+
+		// Account for margins if present
+		cs := child.GetComputedStyle()
+		right := x + cb.Width
+		bottom := paddingTop + cb.Height
+
+		// If the child is a RadioButton, include its label width in
+		// spacing/measurement but do NOT change the radio's own size.
+		labelExtra := 0
+		labelHeight := 0
+		if rb, ok := child.(*RadioButton); ok {
+			if rb.Label != "" {
+				// Determine font size (fallback to 14 as used in Draw)
+				fontSize := 14
+				if cs != nil && cs.FontSize != nil {
+					fontSize = *cs.FontSize
+				}
+				tw, th := text.Measure(rb.Label, float64(fontSize))
+				// Add the small label gap used in Draw (5px)
+				labelExtra = int(math.Ceil(tw)) + 5
+				labelHeight = int(math.Ceil(th))
+				right += labelExtra
+				if paddingTop+labelHeight > bottom {
+					bottom = paddingTop + labelHeight
+				}
+			}
+		}
+
+		if cs != nil && cs.Margin != nil {
+			right += cs.Margin.Right
+			bottom += cs.Margin.Bottom
+			// Advance x by left margin too so spacing respects it
+			x += cs.Margin.Left
+		}
+
+		if right > maxRight {
+			maxRight = right
+		}
+		if bottom > maxBottom {
+			maxBottom = bottom
+		}
+
+		// Advance x for next child: radio width + label width (if any) + spacing
+		x += cb.Width + labelExtra + spacing
+	}
+
+	// Add group's own padding/border to measured size
+	if style != nil {
+		if style.Padding != nil {
+			maxRight += style.Padding.Left + style.Padding.Right
+			maxBottom += style.Padding.Top + style.Padding.Bottom
+		}
+		if style.BorderWidth != nil {
+			bw := *style.BorderWidth
+			maxRight += bw * 2
+			maxBottom += bw * 2
+		}
+	}
+
+	// Apply min/max constraints and assign bounds
+	w, h := ApplySizeConstraints(maxRight, maxBottom, style)
+	rg.bounds.Width = w
+	rg.bounds.Height = h
 }
 
 // Draw draws all child radio buttons

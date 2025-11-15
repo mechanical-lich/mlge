@@ -361,11 +361,54 @@ func (h *HBox) Layout() {
 			currentX += childStyle.Margin.Right
 		}
 		currentX += h.Spacing
+
+		if rg, ok := child.(*RadioGroup); ok {
+			// Special handling for RadioGroup to ensure proper layout
+			for _, rgChild := range rg.GetChildren() {
+				if !rgChild.IsVisible() {
+					continue
+				}
+
+				childStyle := rgChild.GetComputedStyle()
+				childWidth := rgChild.GetWidth()
+				childHeight := rgChild.GetHeight()
+
+				// Apply margin
+				marginedBounds := Rect{
+					X:      currentX,
+					Y:      offsetY,
+					Width:  childWidth,
+					Height: childHeight,
+				}
+				marginedBounds = ApplyMargin(marginedBounds, childStyle)
+
+				// Set child bounds (relative to container's origin)
+				rgChild.SetBounds(Rect{
+					X:      marginedBounds.X,
+					Y:      marginedBounds.Y,
+					Width:  childWidth,
+					Height: childHeight,
+				})
+
+				// Move to next position
+				currentX = marginedBounds.X + childWidth
+				if childStyle != nil && childStyle.Margin != nil {
+					currentX += childStyle.Margin.Right
+				}
+				currentX += h.Spacing
+			}
+		}
 	}
 
 	// Layout children after positioning (like Panel does)
 	for _, child := range h.GetChildren() {
 		child.Layout()
+		if rg, ok := child.(*RadioGroup); ok {
+			// Layout RadioGroup children as well
+			for _, rgChild := range rg.GetChildren() {
+				rgChild.Layout()
+			}
+		}
 	}
 }
 
@@ -535,6 +578,41 @@ func (v *VBox) Layout() {
 			currentY += childStyle.Margin.Bottom
 		}
 		currentY += v.Spacing
+
+		if rg, ok := child.(*RadioGroup); ok {
+			// Special handling for RadioGroup to ensure proper layout
+			for _, rgChild := range rg.GetChildren() {
+				if !rgChild.IsVisible() {
+					continue
+				}
+
+				childStyle := rgChild.GetComputedStyle()
+				childWidth := rgChild.GetWidth()
+				childHeight := rgChild.GetHeight()
+
+				// Apply margin
+				marginedBounds := Rect{
+					X:      offsetX,
+					Y:      currentY,
+					Width:  childWidth,
+					Height: childHeight,
+				}
+				marginedBounds = ApplyMargin(marginedBounds, childStyle)
+
+				// Set child bounds (relative to container's origin)
+				rgChild.SetBounds(Rect{
+					X:      marginedBounds.X,
+					Y:      marginedBounds.Y,
+					Width:  childWidth,
+					Height: childHeight,
+				}) // Move to next position
+				currentY = marginedBounds.Y + childHeight
+				if childStyle != nil && childStyle.Margin != nil {
+					currentY += childStyle.Margin.Bottom
+				}
+				currentY += v.Spacing
+			}
+		}
 	}
 
 	// Layout children after positioning (like Panel does)
