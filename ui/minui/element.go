@@ -134,6 +134,15 @@ func (e *ElementBase) GetChildren() []Element {
 	return e.children
 }
 
+func (e *ElementBase) FindChildByID(id string) Element {
+	for _, child := range e.children {
+		if child.GetID() == id {
+			return child
+		}
+	}
+	return nil
+}
+
 // AddChild adds a child element
 func (e *ElementBase) AddChild(child Element) {
 	e.children = append(e.children, child)

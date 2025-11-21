@@ -2,6 +2,7 @@ package minui
 
 import (
 	"image/color"
+	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -221,16 +222,35 @@ func (ti *TextInput) Draw(screen *ebiten.Image) {
 		}
 	}
 
-	text.Draw(screen, displayText, 14.0, contentBounds.X, contentBounds.Y+6, textColor)
+	// Determine font size (allow style override)
+	fontSize := 14.0
+	if style != nil && style.FontSize != nil {
+		fontSize = float64(*style.FontSize)
+	}
+
+	// Measure text height for vertical centering
+	_, textH := text.Measure("M", fontSize)
+	textY := contentBounds.Y + int(math.Floor((float64(contentBounds.Height)-textH)/2.0))
+
+	// Draw the text starting at the content X and vertically centered
+	text.Draw(screen, displayText, fontSize, contentBounds.X, textY, textColor)
 
 	// Draw cursor if focused
 	if ti.focused {
-		cursorX := contentBounds.X + ti.cursorPos*8
+		// Compute cursor X by measuring text up to cursorPos
+		before := ""
+		if ti.cursorPos > 0 && ti.cursorPos <= len(ti.Text) {
+			before = ti.Text[:ti.cursorPos]
+		}
+		tw, _ := text.Measure(before, fontSize)
+		cursorX := contentBounds.X + int(math.Ceil(tw))
+
+		// Cursor vertically matches the text height
 		cursorBounds := Rect{
 			X:      cursorX,
-			Y:      contentBounds.Y + 2,
+			Y:      textY,
 			Width:  2,
-			Height: contentBounds.Height - 4,
+			Height: int(math.Ceil(textH)),
 		}
 		cursorColor := color.RGBA{0, 0, 0, 255}
 
