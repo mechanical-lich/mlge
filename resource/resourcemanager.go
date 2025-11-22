@@ -7,6 +7,7 @@ import (
 	"image"
 	"io/ioutil"
 	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -79,6 +80,7 @@ func LoadAssetsFromJSON(jsonPath string) error {
 // Names are generated as relative path with directory separators replaced by underscores
 // and without the file extension, e.g. bullfrog/foot.png -> bullfrog_foot
 func processFolder(folderPath string) error {
+	slog.Debug("Loading assets from folder", slog.String("folder", folderPath))
 	// normalize folder path
 	folderPath = filepath.Clean(folderPath)
 
@@ -112,6 +114,7 @@ func processFolder(folderPath string) error {
 			if err := LoadImageAsTexture(name, path); err != nil {
 				return fmt.Errorf("failed loading image %s from %s: %w", name, path, err)
 			}
+			slog.Debug("Loaded texture", slog.String("name", name), slog.String("path", path))
 		default:
 			// not a recognized asset type; ignore
 		}

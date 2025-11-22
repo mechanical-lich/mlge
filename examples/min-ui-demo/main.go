@@ -134,6 +134,14 @@ func (g *Game) setupToolbar() {
 	}
 
 	toolbar.AddChild(titleLabel)
+	// Demo select box
+	demoSelect := minui.NewSelectBox("toolbarSelect", []string{"Option A", "Option B", "Option C"})
+	demoSelect.SetBounds(minui.Rect{X: 240, Y: 18, Width: 90, Height: 28})
+	demoSelect.SelectByIndex(0)
+	demoSelect.OnSelect = func(i int, item string) {
+		fmt.Println("Selected from select:", i, item)
+	}
+	toolbar.AddChild(demoSelect)
 	toolbar.AddChild(openBrowserBtn)
 	toolbar.AddChild(toggleDemoBtn)
 	toolbar.AddChild(newModalBtn)

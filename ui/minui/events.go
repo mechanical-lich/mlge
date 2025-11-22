@@ -13,6 +13,7 @@ const (
 	EventTypeTextInputChange   event.EventType = "ui.textinput.change"
 	EventTypeTextInputSubmit   event.EventType = "ui.textinput.submit"
 	EventTypeListBoxSelect     event.EventType = "ui.listbox.select"
+	EventTypeSelectBoxChange   event.EventType = "ui.selectbox.change"
 	EventTypeModalClose        event.EventType = "ui.modal.close"
 	EventTypeElementFocus      event.EventType = "ui.element.focus"
 	EventTypeElementBlur       event.EventType = "ui.element.blur"
@@ -73,6 +74,18 @@ type ListBoxSelectEvent struct {
 
 func (e ListBoxSelectEvent) GetType() event.EventType {
 	return EventTypeListBoxSelect
+}
+
+// SelectBoxChangeEvent is fired when the SelectBox selection changes
+type SelectBoxChangeEvent struct {
+	SelectBoxID   string
+	SelectBox     *SelectBox
+	SelectedIndex int
+	SelectedItem  string
+}
+
+func (e SelectBoxChangeEvent) GetType() event.EventType {
+	return EventTypeSelectBoxChange
 }
 
 // ModalCloseEvent is fired when a modal is closed

@@ -193,6 +193,17 @@ func elementHasFocusRecursive(e Element) bool {
 	if e.IsHovered() || e.IsFocused() {
 		return true
 	}
+
+	// Special case: Check if element is a SelectBox with an expanded dropdown
+	if e.GetType() == "SelectBox" {
+		if sb, ok := e.(*SelectBox); ok && sb.IsExpanded() {
+			mx, my := ebiten.CursorPosition()
+			if sb.IsMouseOverDropdown(mx, my) {
+				return true
+			}
+		}
+	}
+
 	for _, c := range e.GetChildren() {
 		if elementHasFocusRecursive(c) {
 			return true
