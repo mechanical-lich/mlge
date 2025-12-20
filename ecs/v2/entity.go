@@ -31,6 +31,16 @@ func (entity *Entity) HasComponents(names ...ComponentType) bool {
 	return true
 }
 
+// HasComponentsSlice - same as HasComponents but takes a slice to avoid variadic allocation
+func (entity *Entity) HasComponentsSlice(names []ComponentType) bool {
+	for _, name := range names {
+		if entity.Components[name] == nil {
+			return false
+		}
+	}
+	return true
+}
+
 // GetComponent - Gets the component as a component interface.
 func (entity *Entity) GetComponent(name ComponentType) Component {
 	return entity.Components[name]

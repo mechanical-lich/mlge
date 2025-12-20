@@ -10,15 +10,18 @@ type SystemInterface interface {
 
 // SystemManager - contains a list of systems and is responsible for calling their update functions on entities.
 type SystemManager struct {
-	systems []SystemInterface
+	systems            []SystemInterface
+	cachedRequirements [][]ComponentType // Cache Requires() results
 }
 
 func (s *SystemManager) AddSystem(system SystemInterface) {
 	if s.systems == nil {
 		s.systems = make([]SystemInterface, 0)
+		s.cachedRequirements = make([][]ComponentType, 0)
 	}
 
 	s.systems = append(s.systems, system)
+	s.cachedRequirements = append(s.cachedRequirements, system.Requires())
 }
 
 func (s *SystemManager) UpdateSystems(world any) error {
@@ -33,9 +36,10 @@ func (s *SystemManager) UpdateSystems(world any) error {
 
 // UpdateSystemsForEntity - Iterates through the systems for the specific entity
 func (s *SystemManager) UpdateSystemsForEntity(world any, entity *Entity) error {
-	for system := range s.systems {
-		if entity.HasComponents(s.systems[system].Requires()...) {
-			err := s.systems[system].UpdateEntity(world, entity)
+	for i, system := range s.systems {
+		// Use cached requirements instead of calling Requires() each time
+		if entity.HasComponentsSlice(s.cachedRequirements[i]) {
+			err := system.UpdateEntity(world, entity)
 			if err != nil {
 				return err
 			}
@@ -46,13 +50,13 @@ func (s *SystemManager) UpdateSystemsForEntity(world any, entity *Entity) error 
 
 func (s *SystemManager) UpdateSystemsForEntities(world any, entities []*Entity) error {
 
-	for _, system := range s.systems {
-		required := system.Requires()
+	for i, system := range s.systems {
+		required := s.cachedRequirements[i]
 		for _, entity := range entities {
 			if entity.HasComponent("InanimateComponent") {
 				continue // Skip inanimate entities
 			}
-			if entity.HasComponents(required...) {
+			if entity.HasComponentsSlice(required) {
 				if err := system.UpdateEntity(world, entity); err != nil {
 					return err
 				}
