@@ -9,6 +9,140 @@ import (
 	"github.com/mechanical-lich/mlge/resource"
 )
 
+// ---- Sprite-based rendering functions ----
+
+// DrawSprite draws a sprite from a sprite sheet, scaled to fit the bounds
+func DrawSprite(screen *ebiten.Image, spriteSheet string, coords *SpriteCoords, bounds Rect) {
+	if coords == nil {
+		return
+	}
+
+	img := resource.GetSubImage(spriteSheet, coords.SrcX, coords.SrcY, coords.Width, coords.Height)
+	if img == nil {
+		return
+	}
+
+	op := &ebiten.DrawImageOptions{}
+	scaleX := float64(bounds.Width) / float64(coords.Width)
+	scaleY := float64(bounds.Height) / float64(coords.Height)
+	op.GeoM.Scale(scaleX, scaleY)
+	op.GeoM.Translate(float64(bounds.X), float64(bounds.Y))
+
+	screen.DrawImage(img, op)
+}
+
+// DrawSpriteWithOpacity draws a sprite with opacity
+func DrawSpriteWithOpacity(screen *ebiten.Image, spriteSheet string, coords *SpriteCoords, bounds Rect, opacity float32) {
+	if coords == nil {
+		return
+	}
+
+	img := resource.GetSubImage(spriteSheet, coords.SrcX, coords.SrcY, coords.Width, coords.Height)
+	if img == nil {
+		return
+	}
+
+	op := &ebiten.DrawImageOptions{}
+	scaleX := float64(bounds.Width) / float64(coords.Width)
+	scaleY := float64(bounds.Height) / float64(coords.Height)
+	op.GeoM.Scale(scaleX, scaleY)
+	op.GeoM.Translate(float64(bounds.X), float64(bounds.Y))
+	op.ColorScale.ScaleAlpha(opacity)
+
+	screen.DrawImage(img, op)
+}
+
+// Draw9Slice draws a 9-slice scaled sprite to fill the bounds
+func Draw9Slice(screen *ebiten.Image, spriteSheet string, coords *NineSliceCoords, bounds Rect) {
+	if coords == nil {
+		return
+	}
+
+	x := bounds.X
+	y := bounds.Y
+	w := bounds.Width
+	h := bounds.Height
+	srcX := coords.SrcX
+	srcY := coords.SrcY
+	tileSize := coords.TileSize
+	tileScale := coords.TileScale
+	scaledTile := tileSize * tileScale
+
+	// Draw corners
+	op := ebiten.DrawImageOptions{}
+	op.GeoM.Scale(float64(tileScale), float64(tileScale))
+	op.GeoM.Translate(float64(x), float64(y))
+	screen.DrawImage(resource.GetSubImage(spriteSheet, srcX, srcY, tileSize, tileSize), &op)
+
+	op = ebiten.DrawImageOptions{}
+	op.GeoM.Scale(float64(tileScale), float64(tileScale))
+	op.GeoM.Translate(float64(x+w-scaledTile), float64(y))
+	screen.DrawImage(resource.GetSubImage(spriteSheet, srcX+2*tileSize, srcY, tileSize, tileSize), &op)
+
+	op = ebiten.DrawImageOptions{}
+	op.GeoM.Scale(float64(tileScale), float64(tileScale))
+	op.GeoM.Translate(float64(x), float64(y+h-scaledTile))
+	screen.DrawImage(resource.GetSubImage(spriteSheet, srcX, srcY+2*tileSize, tileSize, tileSize), &op)
+
+	op = ebiten.DrawImageOptions{}
+	op.GeoM.Scale(float64(tileScale), float64(tileScale))
+	op.GeoM.Translate(float64(x+w-scaledTile), float64(y+h-scaledTile))
+	screen.DrawImage(resource.GetSubImage(spriteSheet, srcX+2*tileSize, srcY+2*tileSize, tileSize, tileSize), &op)
+
+	// Draw edges - Top and bottom
+	for dx := scaledTile; dx < w-scaledTile; dx += scaledTile {
+		op = ebiten.DrawImageOptions{}
+		op.GeoM.Scale(float64(tileScale), float64(tileScale))
+		op.GeoM.Translate(float64(x+dx), float64(y))
+		screen.DrawImage(resource.GetSubImage(spriteSheet, srcX+tileSize, srcY, tileSize, tileSize), &op)
+
+		op = ebiten.DrawImageOptions{}
+		op.GeoM.Scale(float64(tileScale), float64(tileScale))
+		op.GeoM.Translate(float64(x+dx), float64(y+h-scaledTile))
+		screen.DrawImage(resource.GetSubImage(spriteSheet, srcX+tileSize, srcY+2*tileSize, tileSize, tileSize), &op)
+	}
+
+	// Left and right
+	for dy := scaledTile; dy < h-scaledTile; dy += scaledTile {
+		op = ebiten.DrawImageOptions{}
+		op.GeoM.Scale(float64(tileScale), float64(tileScale))
+		op.GeoM.Translate(float64(x), float64(y+dy))
+		screen.DrawImage(resource.GetSubImage(spriteSheet, srcX, srcY+tileSize, tileSize, tileSize), &op)
+
+		op = ebiten.DrawImageOptions{}
+		op.GeoM.Scale(float64(tileScale), float64(tileScale))
+		op.GeoM.Translate(float64(x+w-scaledTile), float64(y+dy))
+		screen.DrawImage(resource.GetSubImage(spriteSheet, srcX+2*tileSize, srcY+tileSize, tileSize, tileSize), &op)
+	}
+
+	// Center
+	for dx := scaledTile; dx < w-scaledTile; dx += scaledTile {
+		for dy := scaledTile; dy < h-scaledTile; dy += scaledTile {
+			op = ebiten.DrawImageOptions{}
+			op.GeoM.Scale(float64(tileScale), float64(tileScale))
+			op.GeoM.Translate(float64(x+dx), float64(y+dy))
+			screen.DrawImage(resource.GetSubImage(spriteSheet, srcX+tileSize, srcY+tileSize, tileSize, tileSize), &op)
+		}
+	}
+}
+
+// Draw9SliceToImage draws a 9-slice to an offscreen image (for caching)
+func Draw9SliceToImage(dst *ebiten.Image, spriteSheet string, coords *NineSliceCoords) {
+	if coords == nil {
+		return
+	}
+
+	bounds := dst.Bounds()
+	Draw9Slice(dst, spriteSheet, coords, Rect{
+		X:      0,
+		Y:      0,
+		Width:  bounds.Dx(),
+		Height: bounds.Dy(),
+	})
+}
+
+// ---- Vector-based rendering functions ----
+
 // DrawBackground draws the background of an element based on its style
 func DrawBackground(screen *ebiten.Image, bounds Rect, style *Style) {
 	if style == nil {

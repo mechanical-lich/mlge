@@ -136,6 +136,7 @@ func (t *Toggle) Draw(screen *ebiten.Image) {
 	}
 
 	style := t.GetComputedStyle()
+	theme := t.GetTheme()
 	absX, absY := t.GetAbsolutePosition()
 	absBounds := Rect{
 		X:      absX,
@@ -154,33 +155,46 @@ func (t *Toggle) Draw(screen *ebiten.Image) {
 	switchHeight := 20
 	switchX := contentBounds.X
 	switchY := contentBounds.Y + (contentBounds.Height-switchHeight)/2
+	switchBounds := Rect{X: switchX, Y: switchY, Width: switchWidth, Height: switchHeight}
 
-	// Draw switch track
-	trackColor := color.RGBA{80, 80, 90, 255}
-	if t.On {
-		trackColor = color.RGBA{80, 140, 200, 255}
-	}
-	if t.hovered {
-		if t.On {
-			trackColor = color.RGBA{100, 160, 220, 255}
+	// Check if we should use sprite-based rendering
+	if theme != nil && theme.HasToggleSprites() {
+		var coords *SpriteCoords
+		if t.On && theme.ToggleOn != nil {
+			coords = theme.ToggleOn
 		} else {
-			trackColor = color.RGBA{100, 100, 110, 255}
+			coords = theme.Toggle
 		}
+		DrawSprite(screen, theme.SpriteSheet, coords, switchBounds)
+	} else {
+		// Use vector-based rendering
+		// Draw switch track
+		trackColor := color.RGBA{80, 80, 90, 255}
+		if t.On {
+			trackColor = color.RGBA{80, 140, 200, 255}
+		}
+		if t.hovered {
+			if t.On {
+				trackColor = color.RGBA{100, 160, 220, 255}
+			} else {
+				trackColor = color.RGBA{100, 100, 110, 255}
+			}
+		}
+
+		trackBounds := Rect{X: switchX, Y: switchY, Width: switchWidth, Height: switchHeight}
+		DrawRoundedRect(screen, trackBounds, switchHeight/2, trackColor)
+
+		// Draw switch knob
+		knobSize := switchHeight - 4
+		knobX := switchX + 2
+		if t.On {
+			knobX = switchX + switchWidth - knobSize - 2
+		}
+		knobY := switchY + 2
+
+		knobColor := color.RGBA{255, 255, 255, 255}
+		vector.DrawFilledCircle(screen, float32(knobX)+float32(knobSize)/2, float32(knobY)+float32(knobSize)/2, float32(knobSize)/2, knobColor, true)
 	}
-
-	trackBounds := Rect{X: switchX, Y: switchY, Width: switchWidth, Height: switchHeight}
-	DrawRoundedRect(screen, trackBounds, switchHeight/2, trackColor)
-
-	// Draw switch knob
-	knobSize := switchHeight - 4
-	knobX := switchX + 2
-	if t.On {
-		knobX = switchX + switchWidth - knobSize - 2
-	}
-	knobY := switchY + 2
-
-	knobColor := color.RGBA{255, 255, 255, 255}
-	vector.DrawFilledCircle(screen, float32(knobX)+float32(knobSize)/2, float32(knobY)+float32(knobSize)/2, float32(knobSize)/2, knobColor, true)
 
 	// Draw text label
 	if t.Text != "" {

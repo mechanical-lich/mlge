@@ -19,6 +19,11 @@ type ScrollingTextArea struct {
 
 	draggingThumb bool
 	dragOffsetY   int
+
+	// Cached background for sprite-based rendering
+	bgCache       *ebiten.Image
+	bgCacheWidth  int
+	bgCacheHeight int
 }
 
 // NewScrollingTextArea creates a new scrolling text area
@@ -197,6 +202,7 @@ func (sta *ScrollingTextArea) Draw(screen *ebiten.Image) {
 	}
 
 	style := sta.GetComputedStyle()
+	theme := sta.GetTheme()
 	absX, absY := sta.GetAbsolutePosition()
 	absBounds := Rect{
 		X:      absX,
@@ -205,11 +211,24 @@ func (sta *ScrollingTextArea) Draw(screen *ebiten.Image) {
 		Height: sta.bounds.Height,
 	}
 
-	// Draw background
-	DrawBackground(screen, absBounds, style)
+	// Check if we should use sprite-based rendering
+	if theme != nil && theme.HasScrollingTextAreaSprites() {
+		// Use 9-slice sprite rendering for background
+		if sta.bgCache == nil || sta.bgCacheWidth != sta.bounds.Width || sta.bgCacheHeight != sta.bounds.Height {
+			sta.bgCache = ebiten.NewImage(sta.bounds.Width, sta.bounds.Height)
+			Draw9SliceToImage(sta.bgCache, theme.SpriteSheet, theme.ScrollingTextArea)
+			sta.bgCacheWidth = sta.bounds.Width
+			sta.bgCacheHeight = sta.bounds.Height
+		}
 
-	// Draw border
-	DrawBorder(screen, absBounds, style)
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(float64(absX), float64(absY))
+		screen.DrawImage(sta.bgCache, op)
+	} else {
+		// Use vector-based rendering
+		DrawBackground(screen, absBounds, style)
+		DrawBorder(screen, absBounds, style)
+	}
 
 	// Draw text lines
 	contentBounds := GetContentBounds(absBounds, style)
@@ -237,11 +256,11 @@ func (sta *ScrollingTextArea) Draw(screen *ebiten.Image) {
 
 	// Draw scrollbar if needed
 	if len(sta.Lines) > sta.VisibleLines {
-		sta.drawScrollbar(screen, absBounds)
+		sta.drawScrollbar(screen, absBounds, theme)
 	}
 }
 
-func (sta *ScrollingTextArea) drawScrollbar(screen *ebiten.Image, absBounds Rect) {
+func (sta *ScrollingTextArea) drawScrollbar(screen *ebiten.Image, absBounds Rect, theme *Theme) {
 	barX := absBounds.X + absBounds.Width - 14
 	barY := absBounds.Y + 4
 	barW := 10
@@ -252,26 +271,59 @@ func (sta *ScrollingTextArea) drawScrollbar(screen *ebiten.Image, absBounds Rect
 		return
 	}
 
-	// Draw scrollbar track
-	trackColor := color.RGBA{60, 60, 70, 200}
-	trackBounds := Rect{X: barX, Y: barY, Width: barW, Height: barH}
-	DrawRoundedRect(screen, trackBounds, 4, trackColor)
+	// Check if we should use sprite-based rendering
+	if theme != nil && theme.HasScrollbarSprites() {
+		// Draw scrollbar track using sprite
+		trackBounds := Rect{X: barX, Y: barY, Width: barW, Height: barH}
+		trackCoords := &SpriteCoords{
+			SrcX:   theme.Scrollbar.TrackX,
+			SrcY:   theme.Scrollbar.TrackY,
+			Width:  theme.Scrollbar.TrackWidth,
+			Height: theme.Scrollbar.TrackHeight,
+		}
+		DrawSprite(screen, theme.SpriteSheet, trackCoords, trackBounds)
 
-	// Draw thumb
-	thumbH := int(math.Max(float64(barH*sta.VisibleLines/totalLines), 16))
-	scrollRange := barH - thumbH
-	var thumbY int
-	if totalLines > sta.VisibleLines && scrollRange > 0 {
-		thumbY = barY + (scrollRange*sta.ScrollOffset)/(totalLines-sta.VisibleLines)
+		// Draw thumb using sprite
+		thumbH := int(math.Max(float64(barH*sta.VisibleLines/totalLines), 16))
+		scrollRange := barH - thumbH
+		var thumbY int
+		if totalLines > sta.VisibleLines && scrollRange > 0 {
+			thumbY = barY + (scrollRange*sta.ScrollOffset)/(totalLines-sta.VisibleLines)
+		} else {
+			thumbY = barY
+		}
+
+		thumbBounds := Rect{X: barX, Y: thumbY, Width: barW, Height: thumbH}
+		thumbCoords := &SpriteCoords{
+			SrcX:   theme.Scrollbar.ThumbX,
+			SrcY:   theme.Scrollbar.ThumbY,
+			Width:  theme.Scrollbar.ThumbWidth,
+			Height: theme.Scrollbar.ThumbHeight,
+		}
+		DrawSprite(screen, theme.SpriteSheet, thumbCoords, thumbBounds)
 	} else {
-		thumbY = barY
-	}
+		// Use vector-based rendering
+		// Draw scrollbar track
+		trackColor := color.RGBA{60, 60, 70, 200}
+		trackBounds := Rect{X: barX, Y: barY, Width: barW, Height: barH}
+		DrawRoundedRect(screen, trackBounds, 4, trackColor)
 
-	thumbColor := color.RGBA{120, 120, 140, 255}
-	if sta.hovered || sta.draggingThumb {
-		thumbColor = color.RGBA{140, 140, 160, 255}
-	}
+		// Draw thumb
+		thumbH := int(math.Max(float64(barH*sta.VisibleLines/totalLines), 16))
+		scrollRange := barH - thumbH
+		var thumbY int
+		if totalLines > sta.VisibleLines && scrollRange > 0 {
+			thumbY = barY + (scrollRange*sta.ScrollOffset)/(totalLines-sta.VisibleLines)
+		} else {
+			thumbY = barY
+		}
 
-	thumbBounds := Rect{X: barX, Y: thumbY, Width: barW, Height: thumbH}
-	DrawRoundedRect(screen, thumbBounds, 4, thumbColor)
+		thumbColor := color.RGBA{120, 120, 140, 255}
+		if sta.hovered || sta.draggingThumb {
+			thumbColor = color.RGBA{140, 140, 160, 255}
+		}
+
+		thumbBounds := Rect{X: barX, Y: thumbY, Width: barW, Height: thumbH}
+		DrawRoundedRect(screen, thumbBounds, 4, thumbColor)
+	}
 }

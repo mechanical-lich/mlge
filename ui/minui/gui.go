@@ -7,6 +7,7 @@ import (
 // GUI is the main UI manager
 type GUI struct {
 	RootStyle *Style
+	Theme     *Theme
 	elements  []Element
 	modals    []Element
 }
@@ -15,15 +16,43 @@ type GUI struct {
 func NewGUI() *GUI {
 	return &GUI{
 		RootStyle: DefaultStyle(),
+		Theme:     nil, // No theme by default (uses vector rendering)
 		elements:  make([]Element, 0),
 		modals:    make([]Element, 0),
 	}
+}
+
+// NewGUIWithTheme creates a new GUI manager with a theme
+func NewGUIWithTheme(theme *Theme) *GUI {
+	return &GUI{
+		RootStyle: DefaultStyle(),
+		Theme:     theme,
+		elements:  make([]Element, 0),
+		modals:    make([]Element, 0),
+	}
+}
+
+// SetTheme sets the theme for the GUI
+func (g *GUI) SetTheme(theme *Theme) {
+	g.Theme = theme
+}
+
+// GetTheme returns the current theme
+func (g *GUI) GetTheme() *Theme {
+	return g.Theme
 }
 
 // AddElement adds an element to the GUI
 func (g *GUI) AddElement(element Element) {
 	g.elements = append(g.elements, element)
 	element.SetParent(nil) // Root elements have no parent
+
+	// Set theme on the element if one is configured
+	if g.Theme != nil {
+		if setter, ok := element.(interface{ SetTheme(*Theme) }); ok {
+			setter.SetTheme(g.Theme)
+		}
+	}
 }
 
 // RemoveElement removes an element from the GUI
@@ -39,6 +68,13 @@ func (g *GUI) RemoveElement(element Element) {
 // AddModal adds a modal dialog
 func (g *GUI) AddModal(modal Element) {
 	g.modals = append(g.modals, modal)
+
+	// Set theme on the modal if one is configured
+	if g.Theme != nil {
+		if setter, ok := modal.(interface{ SetTheme(*Theme) }); ok {
+			setter.SetTheme(g.Theme)
+		}
+	}
 }
 
 // RemoveModal removes a modal dialog

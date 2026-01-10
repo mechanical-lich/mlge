@@ -23,6 +23,11 @@ type Modal struct {
 	titleBarHeight int
 	initialWidth   int // Store initial width as minimum
 	initialHeight  int // Store initial height as minimum
+
+	// Cached background for sprite-based rendering
+	bgCache       *ebiten.Image
+	bgCacheWidth  int
+	bgCacheHeight int
 }
 
 // NewModal creates a new modal dialog
@@ -250,6 +255,7 @@ func (m *Modal) Draw(screen *ebiten.Image) {
 	}
 
 	style := m.GetComputedStyle()
+	theme := m.GetTheme()
 
 	// Draw semi-transparent overlay behind modal
 	overlayColor := color.RGBA{0, 0, 0, 128}
@@ -265,69 +271,100 @@ func (m *Modal) Draw(screen *ebiten.Image) {
 		Height: m.bounds.Height,
 	}
 
-	// Draw modal background
-	DrawBackground(screen, absBounds, style)
-
-	// Draw title bar
-	titleBarBounds := Rect{
-		X:      absX,
-		Y:      absY,
-		Width:  m.bounds.Width,
-		Height: m.titleBarHeight,
-	}
-
-	titleBarColor := color.RGBA{100, 120, 180, 255}
-	borderRadius := 0
-	if style.BorderRadius != nil {
-		borderRadius = *style.BorderRadius
-	}
-
-	if borderRadius > 0 {
-		// Draw rounded top
-		DrawRoundedRect(screen, titleBarBounds, borderRadius, titleBarColor)
-		// Cover bottom with rectangle
-		bottomRect := Rect{
-			X:      titleBarBounds.X,
-			Y:      titleBarBounds.Y + borderRadius,
-			Width:  titleBarBounds.Width,
-			Height: titleBarBounds.Height - borderRadius,
+	// Check if we should use sprite-based rendering
+	if theme != nil && theme.HasModalSprites() {
+		// Use 9-slice sprite rendering
+		// Cache the background if needed
+		if m.bgCache == nil || m.bgCacheWidth != m.bounds.Width || m.bgCacheHeight != m.bounds.Height {
+			m.bgCache = ebiten.NewImage(m.bounds.Width, m.bounds.Height)
+			Draw9SliceToImage(m.bgCache, theme.SpriteSheet, theme.ModalNineSlice)
+			m.bgCacheWidth = m.bounds.Width
+			m.bgCacheHeight = m.bounds.Height
 		}
-		DrawRect(screen, bottomRect, titleBarColor)
+
+		// Draw cached background
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(float64(absX), float64(absY))
+		screen.DrawImage(m.bgCache, op)
+
+		// Draw title text
+		titleColor := color.RGBA{255, 255, 255, 255}
+		text.Draw(screen, m.Title, 16.0, absX+8, absY+6, titleColor)
+
+		// Draw close button (use sprite if available)
+		if m.Closeable {
+			m.drawCloseButton(screen, absX, absY, theme)
+		}
 	} else {
-		DrawRect(screen, titleBarBounds, titleBarColor)
-	}
+		// Use vector-based rendering (original code)
+		DrawBackground(screen, absBounds, style)
 
-	// Draw title text
-	titleColor := color.RGBA{255, 255, 255, 255}
-	text.Draw(screen, m.Title, 16.0, absX+8, absY+6, titleColor)
-
-	// Draw close button
-	if m.Closeable {
-		closeBtnBounds := Rect{
-			X:      absX + m.bounds.Width - 28,
-			Y:      absY + 4,
-			Width:  24,
-			Height: 22,
+		// Draw title bar
+		titleBarBounds := Rect{
+			X:      absX,
+			Y:      absY,
+			Width:  m.bounds.Width,
+			Height: m.titleBarHeight,
 		}
 
-		closeBtnColor := color.RGBA{200, 80, 80, 255}
-		mx, my := ebiten.CursorPosition()
-		if closeBtnBounds.Contains(mx, my) {
-			closeBtnColor = color.RGBA{220, 100, 100, 255}
+		titleBarColor := color.RGBA{100, 120, 180, 255}
+		borderRadius := 0
+		if style.BorderRadius != nil {
+			borderRadius = *style.BorderRadius
 		}
 
-		DrawRoundedRect(screen, closeBtnBounds, 3, closeBtnColor)
+		if borderRadius > 0 {
+			// Draw rounded top
+			DrawRoundedRect(screen, titleBarBounds, borderRadius, titleBarColor)
+			// Cover bottom with rectangle
+			bottomRect := Rect{
+				X:      titleBarBounds.X,
+				Y:      titleBarBounds.Y + borderRadius,
+				Width:  titleBarBounds.Width,
+				Height: titleBarBounds.Height - borderRadius,
+			}
+			DrawRect(screen, bottomRect, titleBarColor)
+		} else {
+			DrawRect(screen, titleBarBounds, titleBarColor)
+		}
 
-		// Draw X
-		xColor := color.RGBA{255, 255, 255, 255}
-		text.Draw(screen, "X", 14.0, closeBtnBounds.X+7, closeBtnBounds.Y+3, xColor)
+		// Draw title text
+		titleColor := color.RGBA{255, 255, 255, 255}
+		text.Draw(screen, m.Title, 16.0, absX+8, absY+6, titleColor)
+
+		// Draw close button
+		if m.Closeable {
+			m.drawCloseButton(screen, absX, absY, nil)
+		}
+
+		// Draw border
+		DrawBorder(screen, absBounds, style)
 	}
 
 	// Draw children
 	for _, child := range m.children {
 		child.Draw(screen)
 	}
+}
 
-	// Draw border
-	DrawBorder(screen, absBounds, style)
+// drawCloseButton draws the close button, using sprites if available
+func (m *Modal) drawCloseButton(screen *ebiten.Image, absX, absY int, theme *Theme) {
+	closeBtnBounds := Rect{
+		X:      absX + m.bounds.Width - 28,
+		Y:      absY + 4,
+		Width:  24,
+		Height: 22,
+	}
+
+	closeBtnColor := color.RGBA{200, 80, 80, 255}
+	mx, my := ebiten.CursorPosition()
+	if closeBtnBounds.Contains(mx, my) {
+		closeBtnColor = color.RGBA{220, 100, 100, 255}
+	}
+
+	DrawRoundedRect(screen, closeBtnBounds, 3, closeBtnColor)
+
+	// Draw X
+	xColor := color.RGBA{255, 255, 255, 255}
+	text.Draw(screen, "X", 14.0, closeBtnBounds.X+7, closeBtnBounds.Y+3, xColor)
 }

@@ -137,6 +137,8 @@ func (b *Button) Draw(screen *ebiten.Image) {
 
 	// Get style based on state
 	style := b.GetComputedStyle()
+	theme := b.GetTheme()
+
 	if b.pressed {
 		if style.ActiveStyle != nil {
 			style = style.ActiveStyle.Merge(style)
@@ -152,11 +154,21 @@ func (b *Button) Draw(screen *ebiten.Image) {
 		Height: b.bounds.Height,
 	}
 
-	// Draw background
-	DrawBackground(screen, absBounds, style)
-
-	// Draw border
-	DrawBorder(screen, absBounds, style)
+	// Check if we should use sprite-based rendering
+	if theme != nil && theme.HasButtonSprites() {
+		// Use sprite-based rendering
+		var coords *SpriteCoords
+		if b.pressed && theme.ButtonPressed != nil {
+			coords = theme.ButtonPressed
+		} else {
+			coords = theme.Button
+		}
+		DrawSprite(screen, theme.SpriteSheet, coords, absBounds)
+	} else {
+		// Use vector-based rendering
+		DrawBackground(screen, absBounds, style)
+		DrawBorder(screen, absBounds, style)
+	}
 
 	// Draw text
 	contentBounds := GetContentBounds(absBounds, style)
@@ -168,11 +180,11 @@ func (b *Button) Draw(screen *ebiten.Image) {
 
 	textColor := color.RGBA{255, 255, 255, 255}
 	if style.ForegroundColor != nil {
-		r, g, b, a := (*style.ForegroundColor).RGBA()
+		r, g, bb, a := (*style.ForegroundColor).RGBA()
 		textColor = color.RGBA{
 			R: uint8(r >> 8),
 			G: uint8(g >> 8),
-			B: uint8(b >> 8),
+			B: uint8(bb >> 8),
 			A: uint8(a >> 8),
 		}
 	}

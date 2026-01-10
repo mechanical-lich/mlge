@@ -91,6 +91,9 @@ type ElementBase struct {
 	hovered  bool
 	focused  bool
 
+	// Theme for sprite-based rendering (set by GUI when element is added)
+	theme *Theme
+
 	// Cached computed style
 	computedStyle *Style
 	styleDirty    bool
@@ -105,6 +108,7 @@ func NewElementBase(id string) *ElementBase {
 		enabled:    true,
 		visible:    true,
 		styleDirty: true,
+		theme:      nil,
 	}
 }
 
@@ -344,6 +348,27 @@ func (e *ElementBase) MarkStyleDirty() {
 		if childBase := getElementBase(child); childBase != nil {
 			childBase.MarkStyleDirty()
 		}
+	}
+}
+
+// GetTheme returns the theme for this element
+func (e *ElementBase) GetTheme() *Theme {
+	return e.theme
+}
+
+// SetTheme sets the theme for this element and all children
+func (e *ElementBase) SetTheme(theme *Theme) {
+	e.theme = theme
+	for _, child := range e.children {
+		setThemeRecursive(child, theme)
+	}
+}
+
+// setThemeRecursive sets the theme on an element and its children
+func setThemeRecursive(elem Element, theme *Theme) {
+	// Try to get ElementBase methods
+	if setter, ok := elem.(interface{ SetTheme(*Theme) }); ok {
+		setter.SetTheme(theme)
 	}
 }
 

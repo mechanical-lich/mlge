@@ -133,52 +133,73 @@ func (rb *RadioButton) Draw(screen *ebiten.Image) {
 	absX, absY := rb.GetAbsolutePosition()
 
 	style := rb.GetComputedStyle()
+	theme := rb.GetTheme()
 
-	// Get colors
-	borderColor := color.RGBA{100, 100, 120, 255}
-	if style.BorderColor != nil {
-		if rgba, ok := (*style.BorderColor).(color.RGBA); ok {
-			borderColor = rgba
+	// Check if we should use sprite-based rendering
+	if theme != nil && theme.HasRadioButtonSprites() {
+		// Use sprite-based rendering
+		absBounds := Rect{
+			X:      absX,
+			Y:      absY,
+			Width:  rb.bounds.Width,
+			Height: rb.bounds.Height,
 		}
-	}
 
-	bgColor := color.RGBA{255, 255, 255, 255}
-	if style.BackgroundColor != nil {
-		if rgba, ok := (*style.BackgroundColor).(color.RGBA); ok {
-			bgColor = rgba
+		var coords *SpriteCoords
+		if rb.Selected && theme.RadioButtonActive != nil {
+			coords = theme.RadioButtonActive
+		} else {
+			coords = theme.RadioButton
 		}
-	}
-
-	borderWidth := float32(2.0)
-	if style.BorderWidth != nil {
-		borderWidth = float32(*style.BorderWidth)
-	}
-
-	// Calculate center and radius
-	centerX := float32(absX) + float32(rb.bounds.Width)/2
-	centerY := float32(absY) + float32(rb.bounds.Height)/2
-	radius := float32(rb.bounds.Width) / 2
-
-	// Draw background circle
-	vector.DrawFilledCircle(screen, centerX, centerY, radius, bgColor, true)
-
-	// Draw border circle
-	vector.StrokeCircle(screen, centerX, centerY, radius, borderWidth, borderColor, true)
-
-	// Draw inner filled circle if selected
-	if rb.Selected {
-		innerRadius := radius * 0.5
-		selectedColor := color.RGBA{100, 120, 180, 255}
-		if rb.hovered {
-			selectedColor = color.RGBA{120, 140, 200, 255}
+		DrawSprite(screen, theme.SpriteSheet, coords, absBounds)
+	} else {
+		// Use vector-based rendering (original code)
+		// Get colors
+		borderColor := color.RGBA{100, 100, 120, 255}
+		if style.BorderColor != nil {
+			if rgba, ok := (*style.BorderColor).(color.RGBA); ok {
+				borderColor = rgba
+			}
 		}
-		vector.DrawFilledCircle(screen, centerX, centerY, innerRadius, selectedColor, true)
-	}
 
-	// Highlight on hover
-	if rb.hovered && !rb.Selected {
-		hoverColor := color.RGBA{220, 220, 230, 255}
-		vector.DrawFilledCircle(screen, centerX, centerY, radius-borderWidth, hoverColor, true)
+		bgColor := color.RGBA{255, 255, 255, 255}
+		if style.BackgroundColor != nil {
+			if rgba, ok := (*style.BackgroundColor).(color.RGBA); ok {
+				bgColor = rgba
+			}
+		}
+
+		borderWidth := float32(2.0)
+		if style.BorderWidth != nil {
+			borderWidth = float32(*style.BorderWidth)
+		}
+
+		// Calculate center and radius
+		centerX := float32(absX) + float32(rb.bounds.Width)/2
+		centerY := float32(absY) + float32(rb.bounds.Height)/2
+		radius := float32(rb.bounds.Width) / 2
+
+		// Draw background circle
+		vector.DrawFilledCircle(screen, centerX, centerY, radius, bgColor, true)
+
+		// Draw border circle
+		vector.StrokeCircle(screen, centerX, centerY, radius, borderWidth, borderColor, true)
+
+		// Draw inner filled circle if selected
+		if rb.Selected {
+			innerRadius := radius * 0.5
+			selectedColor := color.RGBA{100, 120, 180, 255}
+			if rb.hovered {
+				selectedColor = color.RGBA{120, 140, 200, 255}
+			}
+			vector.DrawFilledCircle(screen, centerX, centerY, innerRadius, selectedColor, true)
+		}
+
+		// Highlight on hover
+		if rb.hovered && !rb.Selected {
+			hoverColor := color.RGBA{220, 220, 230, 255}
+			vector.DrawFilledCircle(screen, centerX, centerY, radius-borderWidth, hoverColor, true)
+		}
 	}
 
 	// Draw label text to the right of the radio button
