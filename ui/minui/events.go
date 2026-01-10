@@ -18,6 +18,7 @@ const (
 	EventTypeElementFocus      event.EventType = "ui.element.focus"
 	EventTypeElementBlur       event.EventType = "ui.element.blur"
 	EventTypeElementHover      event.EventType = "ui.element.hover"
+	EventTypeToggleChange      event.EventType = "ui.toggle.change"
 )
 
 // ButtonClickEvent is fired when a button is clicked

@@ -207,12 +207,15 @@ type RadioGroup struct {
 	*ElementBase
 	selectedID        string
 	OnSelectionChange func(selectedID string, selectedButton *RadioButton)
+	Vertical          bool // If true, lay out buttons vertically instead of horizontally
+	Spacing           int  // Space between buttons
 }
 
 // NewRadioGroup creates a new radio button group
 func NewRadioGroup(id string) *RadioGroup {
 	return &RadioGroup{
 		ElementBase: NewElementBase(id),
+		Spacing:     8,
 	}
 }
 
@@ -326,15 +329,13 @@ func (rg *RadioGroup) Update() {
 
 // Layout lays out the group (children are positioned manually or by container)
 func (rg *RadioGroup) Layout() {
-	// Layout children and position them horizontally within the group.
-	// This makes RadioGroup behave as a simple horizontal container so
-	// that adding radio buttons to the group without also adding them
-	// directly to a Panel/HBox will still render with spacing.
+	// Layout children and position them within the group.
+	// Supports both horizontal and vertical layout via rg.Vertical flag.
 	style := rg.GetComputedStyle()
 
 	paddingLeft := 0
 	paddingTop := 0
-	spacing := 8
+	spacing := rg.Spacing
 	if style != nil {
 		if style.Padding != nil {
 			paddingLeft = style.Padding.Left
@@ -343,6 +344,7 @@ func (rg *RadioGroup) Layout() {
 	}
 
 	x := paddingLeft
+	y := paddingTop
 	maxRight := 0
 	maxBottom := 0
 
@@ -354,13 +356,18 @@ func (rg *RadioGroup) Layout() {
 		// Let the child compute its preferred size first
 		child.Layout()
 		cb := child.GetBounds()
+
 		// Position the child relative to the group's content origin
-		child.SetBounds(Rect{X: x, Y: paddingTop, Width: cb.Width, Height: cb.Height})
+		if rg.Vertical {
+			child.SetBounds(Rect{X: paddingLeft, Y: y, Width: cb.Width, Height: cb.Height})
+		} else {
+			child.SetBounds(Rect{X: x, Y: paddingTop, Width: cb.Width, Height: cb.Height})
+		}
 
 		// Account for margins if present
 		cs := child.GetComputedStyle()
 		right := x + cb.Width
-		bottom := paddingTop + cb.Height
+		bottom := y + cb.Height
 
 		// If the child is a RadioButton, include its label width in
 		// spacing/measurement but do NOT change the radio's own size.
@@ -378,8 +385,8 @@ func (rg *RadioGroup) Layout() {
 				labelExtra = int(math.Ceil(tw)) + 5
 				labelHeight = int(math.Ceil(th))
 				right += labelExtra
-				if paddingTop+labelHeight > bottom {
-					bottom = paddingTop + labelHeight
+				if y+labelHeight > bottom {
+					bottom = y + labelHeight
 				}
 			}
 		}
@@ -387,8 +394,11 @@ func (rg *RadioGroup) Layout() {
 		if cs != nil && cs.Margin != nil {
 			right += cs.Margin.Right
 			bottom += cs.Margin.Bottom
-			// Advance x by left margin too so spacing respects it
-			x += cs.Margin.Left
+			if rg.Vertical {
+				y += cs.Margin.Top
+			} else {
+				x += cs.Margin.Left
+			}
 		}
 
 		if right > maxRight {
@@ -398,8 +408,15 @@ func (rg *RadioGroup) Layout() {
 			maxBottom = bottom
 		}
 
-		// Advance x for next child: radio width + label width (if any) + spacing
-		x += cb.Width + labelExtra + spacing
+		// Advance position for next child
+		if rg.Vertical {
+			y += cb.Height + spacing
+			if labelHeight > cb.Height {
+				y += labelHeight - cb.Height
+			}
+		} else {
+			x += cb.Width + labelExtra + spacing
+		}
 	}
 
 	// Add group's own padding/border to measured size
