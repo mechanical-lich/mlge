@@ -180,26 +180,22 @@ func DefaultStyle() *Style {
 	bold := false
 	italic := false
 
-	fg := color.Color(color.RGBA{0, 0, 0, 255})
-	bg := color.Color(color.RGBA{60, 60, 70, 255})
-	border := color.Color(color.RGBA{80, 80, 90, 255})
+	// NOTE: Colors are NOT set here - they come from the Theme instead.
+	// This allows themes to control text/background/border colors.
 
 	return &Style{
-		Visible:         &visible,
-		Opacity:         &opacity,
-		FontSize:        &fontSize,
-		FontBold:        &bold,
-		FontItalic:      &italic,
-		Padding:         padding,
-		Margin:          margin,
-		BorderWidth:     &borderWidth,
-		BorderRadius:    &borderRadius,
-		ForegroundColor: &fg,
-		BackgroundColor: &bg,
-		BorderColor:     &border,
-		TextAlign:       &textAlign,
-		VertAlign:       &vertAlign,
-		Align:           &align,
+		Visible:      &visible,
+		Opacity:      &opacity,
+		FontSize:     &fontSize,
+		FontBold:     &bold,
+		FontItalic:   &italic,
+		Padding:      padding,
+		Margin:       margin,
+		BorderWidth:  &borderWidth,
+		BorderRadius: &borderRadius,
+		TextAlign:    &textAlign,
+		VertAlign:    &vertAlign,
+		Align:        &align,
 	}
 }
 

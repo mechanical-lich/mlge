@@ -32,9 +32,23 @@ func NewGUIWithTheme(theme *Theme) *GUI {
 	}
 }
 
-// SetTheme sets the theme for the GUI
+// SetTheme sets the theme for the GUI and propagates to all existing elements
 func (g *GUI) SetTheme(theme *Theme) {
 	g.Theme = theme
+
+	// Propagate theme to all existing elements
+	for _, element := range g.elements {
+		if setter, ok := element.(interface{ SetTheme(*Theme) }); ok {
+			setter.SetTheme(theme)
+		}
+	}
+
+	// Propagate theme to all modals
+	for _, modal := range g.modals {
+		if setter, ok := modal.(interface{ SetTheme(*Theme) }); ok {
+			setter.SetTheme(theme)
+		}
+	}
 }
 
 // GetTheme returns the current theme

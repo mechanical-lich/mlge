@@ -7,6 +7,7 @@ import (
 // UI Event Types
 const (
 	EventTypeButtonClick       event.EventType = "ui.button.click"
+	EventTypeIconButtonClick   event.EventType = "ui.iconbutton.click"
 	EventTypeCheckboxChange    event.EventType = "ui.checkbox.change"
 	EventTypeRadioButtonChange event.EventType = "ui.radiobutton.change"
 	EventTypeRadioGroupChange  event.EventType = "ui.radiogroup.change"
@@ -19,6 +20,10 @@ const (
 	EventTypeElementBlur       event.EventType = "ui.element.blur"
 	EventTypeElementHover      event.EventType = "ui.element.hover"
 	EventTypeToggleChange      event.EventType = "ui.toggle.change"
+	EventTypeTreeViewSelect    event.EventType = "ui.treeview.select"
+	EventTypeTreeViewToggle    event.EventType = "ui.treeview.toggle"
+	EventTypeTabChange         event.EventType = "ui.tabpanel.change"
+	EventTypePopupMenuSelect   event.EventType = "ui.popupmenu.select"
 )
 
 // ButtonClickEvent is fired when a button is clicked

@@ -37,6 +37,13 @@ func (p *Panel) SetLayoutDirection(dir LayoutDirection) {
 func (p *Panel) AddChild(child Element) {
 	p.children = append(p.children, child)
 	child.SetParent(p) // p is the Panel, which implements Element
+
+	// Propagate theme to child if we have one
+	if p.theme != nil {
+		if setter, ok := child.(interface{ SetTheme(*Theme) }); ok {
+			setter.SetTheme(p.theme)
+		}
+	}
 }
 
 // Update updates the panel and its children
@@ -191,6 +198,7 @@ func (p *Panel) Draw(screen *ebiten.Image) {
 	}
 
 	style := p.GetComputedStyle()
+	theme := p.GetTheme()
 
 	// Get absolute position for drawing
 	absX, absY := p.GetAbsolutePosition()
@@ -201,11 +209,11 @@ func (p *Panel) Draw(screen *ebiten.Image) {
 		Height: p.bounds.Height,
 	}
 
-	// Draw background
-	DrawBackground(screen, absBounds, style)
+	// Draw background - use theme colors as fallback if no explicit style
+	DrawBackgroundWithTheme(screen, absBounds, style, theme)
 
-	// Draw border
-	DrawBorder(screen, absBounds, style)
+	// Draw border - use theme colors as fallback
+	DrawBorderWithTheme(screen, absBounds, style, theme)
 
 	// Draw children
 	for _, child := range p.children {
@@ -236,6 +244,13 @@ func (h *HBox) GetType() string {
 func (h *HBox) AddChild(child Element) {
 	h.children = append(h.children, child)
 	child.SetParent(h)
+
+	// Propagate theme to child if we have one
+	if h.theme != nil {
+		if setter, ok := child.(interface{ SetTheme(*Theme) }); ok {
+			setter.SetTheme(h.theme)
+		}
+	}
 }
 
 // Update updates all children
@@ -455,6 +470,13 @@ func (v *VBox) GetType() string {
 func (v *VBox) AddChild(child Element) {
 	v.children = append(v.children, child)
 	child.SetParent(v)
+
+	// Propagate theme to child if we have one
+	if v.theme != nil {
+		if setter, ok := child.(interface{ SetTheme(*Theme) }); ok {
+			setter.SetTheme(v.theme)
+		}
+	}
 }
 
 // Update updates all children

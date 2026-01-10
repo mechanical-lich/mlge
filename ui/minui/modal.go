@@ -43,14 +43,10 @@ func NewModal(id, title string, width, height int) *Modal {
 
 	modal.SetSize(width, height)
 
-	// Set default modal style
-	bgColor := color.Color(color.RGBA{240, 240, 245, 255})
-	borderColor := color.Color(color.RGBA{100, 100, 110, 255})
+	// Set default modal style - only border properties, colors come from theme
 	borderWidth := 2
 	borderRadius := 6
 
-	modal.style.BackgroundColor = &bgColor
-	modal.style.BorderColor = &borderColor
 	modal.style.BorderWidth = &borderWidth
 	modal.style.BorderRadius = &borderRadius
 
@@ -66,6 +62,13 @@ func (m *Modal) GetType() string {
 func (m *Modal) AddChild(child Element) {
 	m.children = append(m.children, child)
 	child.SetParent(m) // m is the Modal, which implements Element through Panel
+
+	// Propagate theme to child if we have one
+	if m.theme != nil {
+		if setter, ok := child.(interface{ SetTheme(*Theme) }); ok {
+			setter.SetTheme(m.theme)
+		}
+	}
 }
 
 // Update updates the modal
@@ -296,8 +299,8 @@ func (m *Modal) Draw(screen *ebiten.Image) {
 			m.drawCloseButton(screen, absX, absY, theme)
 		}
 	} else {
-		// Use vector-based rendering (original code)
-		DrawBackground(screen, absBounds, style)
+		// Use vector-based rendering with theme support
+		DrawBackgroundWithTheme(screen, absBounds, style, theme)
 
 		// Draw title bar
 		titleBarBounds := Rect{
@@ -307,7 +310,12 @@ func (m *Modal) Draw(screen *ebiten.Image) {
 			Height: m.titleBarHeight,
 		}
 
+		// Use theme primary color for title bar, fallback to default
 		titleBarColor := color.RGBA{100, 120, 180, 255}
+		if theme != nil {
+			titleBarColor = colorToRGBA(theme.Colors.Primary)
+		}
+
 		borderRadius := 0
 		if style.BorderRadius != nil {
 			borderRadius = *style.BorderRadius
@@ -328,17 +336,17 @@ func (m *Modal) Draw(screen *ebiten.Image) {
 			DrawRect(screen, titleBarBounds, titleBarColor)
 		}
 
-		// Draw title text
+		// Draw title text - use contrasting color based on theme
 		titleColor := color.RGBA{255, 255, 255, 255}
 		text.Draw(screen, m.Title, 16.0, absX+8, absY+6, titleColor)
 
 		// Draw close button
 		if m.Closeable {
-			m.drawCloseButton(screen, absX, absY, nil)
+			m.drawCloseButton(screen, absX, absY, theme)
 		}
 
-		// Draw border
-		DrawBorder(screen, absBounds, style)
+		// Draw border with theme support
+		DrawBorderWithTheme(screen, absBounds, style, theme)
 	}
 
 	// Draw children

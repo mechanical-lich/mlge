@@ -351,9 +351,18 @@ func (e *ElementBase) MarkStyleDirty() {
 	}
 }
 
-// GetTheme returns the theme for this element
+// GetTheme returns the theme for this element, walking up the parent chain if needed
 func (e *ElementBase) GetTheme() *Theme {
-	return e.theme
+	if e.theme != nil {
+		return e.theme
+	}
+	// Walk up parent chain to find theme
+	if e.parent != nil {
+		if getter, ok := e.parent.(interface{ GetTheme() *Theme }); ok {
+			return getter.GetTheme()
+		}
+	}
+	return nil
 }
 
 // SetTheme sets the theme for this element and all children

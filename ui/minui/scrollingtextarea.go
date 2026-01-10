@@ -41,20 +41,14 @@ func NewScrollingTextArea(id string, width, height int) *ScrollingTextArea {
 	// Calculate visible lines based on height
 	sta.VisibleLines = int(math.Floor(float64(height-10) / float64(sta.LineHeight)))
 
-	// Set default style - white background
-	bgColor := color.Color(color.RGBA{255, 255, 255, 230})
-	borderColor := color.Color(color.RGBA{80, 80, 90, 128})
+	// Set default style - only structural properties, colors come from theme
 	borderWidth := 1
 	borderRadius := 4
 	padding := NewEdgeInsets(6)
-	textColor := color.Color(color.RGBA{0, 0, 0, 255})
 
-	sta.style.BackgroundColor = &bgColor
-	sta.style.BorderColor = &borderColor
 	sta.style.BorderWidth = &borderWidth
 	sta.style.BorderRadius = &borderRadius
 	sta.style.Padding = padding
-	sta.style.ForegroundColor = &textColor
 
 	return sta
 }
@@ -225,9 +219,9 @@ func (sta *ScrollingTextArea) Draw(screen *ebiten.Image) {
 		op.GeoM.Translate(float64(absX), float64(absY))
 		screen.DrawImage(sta.bgCache, op)
 	} else {
-		// Use vector-based rendering
-		DrawBackground(screen, absBounds, style)
-		DrawBorder(screen, absBounds, style)
+		// Use vector-based rendering with theme support
+		DrawBackgroundWithTheme(screen, absBounds, style, theme)
+		DrawBorderWithTheme(screen, absBounds, style, theme)
 	}
 
 	// Draw text lines
@@ -238,15 +232,12 @@ func (sta *ScrollingTextArea) Draw(screen *ebiten.Image) {
 		end = len(sta.Lines)
 	}
 
+	// Get text color from style, then theme, then default
 	textColor := color.RGBA{255, 255, 255, 255}
 	if style.ForegroundColor != nil {
-		r, g, b, a := (*style.ForegroundColor).RGBA()
-		textColor = color.RGBA{
-			R: uint8(r >> 8),
-			G: uint8(g >> 8),
-			B: uint8(b >> 8),
-			A: uint8(a >> 8),
-		}
+		textColor = colorToRGBA(*style.ForegroundColor)
+	} else if theme != nil {
+		textColor = colorToRGBA(theme.Colors.Text)
 	}
 
 	for i := start; i < end; i++ {
@@ -302,9 +293,13 @@ func (sta *ScrollingTextArea) drawScrollbar(screen *ebiten.Image, absBounds Rect
 		}
 		DrawSprite(screen, theme.SpriteSheet, thumbCoords, thumbBounds)
 	} else {
-		// Use vector-based rendering
+		// Use vector-based rendering with theme colors
 		// Draw scrollbar track
 		trackColor := color.RGBA{60, 60, 70, 200}
+		if theme != nil {
+			trackColor = colorToRGBA(theme.Colors.Surface)
+			trackColor.A = 200
+		}
 		trackBounds := Rect{X: barX, Y: barY, Width: barW, Height: barH}
 		DrawRoundedRect(screen, trackBounds, 4, trackColor)
 
@@ -319,8 +314,13 @@ func (sta *ScrollingTextArea) drawScrollbar(screen *ebiten.Image, absBounds Rect
 		}
 
 		thumbColor := color.RGBA{120, 120, 140, 255}
+		if theme != nil {
+			thumbColor = colorToRGBA(theme.Colors.Border)
+		}
 		if sta.hovered || sta.draggingThumb {
-			thumbColor = color.RGBA{140, 140, 160, 255}
+			thumbColor.R = min(thumbColor.R+20, 255)
+			thumbColor.G = min(thumbColor.G+20, 255)
+			thumbColor.B = min(thumbColor.B+20, 255)
 		}
 
 		thumbBounds := Rect{X: barX, Y: thumbY, Width: barW, Height: thumbH}

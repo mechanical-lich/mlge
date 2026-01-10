@@ -93,6 +93,7 @@ func (l *Label) Draw(screen *ebiten.Image) {
 	}
 
 	style := l.GetComputedStyle()
+	theme := l.GetTheme()
 
 	// Get absolute position for drawing
 	absX, absY := l.GetAbsolutePosition()
@@ -103,11 +104,11 @@ func (l *Label) Draw(screen *ebiten.Image) {
 		Height: l.bounds.Height,
 	}
 
-	// Draw background
-	DrawBackground(screen, absBounds, style)
+	// Draw background with theme support
+	DrawBackgroundWithTheme(screen, absBounds, style, theme)
 
-	// Draw border
-	DrawBorder(screen, absBounds, style)
+	// Draw border with theme support
+	DrawBorderWithTheme(screen, absBounds, style, theme)
 
 	// Draw text
 	contentBounds := GetContentBounds(absBounds, style)
@@ -117,15 +118,12 @@ func (l *Label) Draw(screen *ebiten.Image) {
 		fontSize = *style.FontSize
 	}
 
+	// Get text color from style, then theme, then default
 	textColor := color.RGBA{255, 255, 255, 255}
 	if style.ForegroundColor != nil {
-		r, g, b, a := (*style.ForegroundColor).RGBA()
-		textColor = color.RGBA{
-			R: uint8(r >> 8),
-			G: uint8(g >> 8),
-			B: uint8(b >> 8),
-			A: uint8(a >> 8),
-		}
+		textColor = colorToRGBA(*style.ForegroundColor)
+	} else if theme != nil {
+		textColor = colorToRGBA(theme.Colors.Text)
 	}
 
 	// Calculate text position based on alignment

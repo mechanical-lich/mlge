@@ -27,30 +27,14 @@ func NewButton(id, text string) *Button {
 	// Set default size
 	button.SetSize(len(text)*10+20, 32)
 
-	// Set default button style
-	bgColor := color.Color(color.RGBA{90, 90, 100, 255})
-	borderColor := color.Color(color.RGBA{120, 120, 130, 255})
+	// Set default button style - only structural properties, colors come from theme
 	borderWidth := 2
 	borderRadius := 4
 	padding := NewEdgeInsets(8)
 
-	button.style.BackgroundColor = &bgColor
-	button.style.BorderColor = &borderColor
 	button.style.BorderWidth = &borderWidth
 	button.style.BorderRadius = &borderRadius
 	button.style.Padding = padding
-
-	// Hover style
-	hoverBg := color.Color(color.RGBA{110, 110, 120, 255})
-	button.style.HoverStyle = &Style{
-		BackgroundColor: &hoverBg,
-	}
-
-	// Active/pressed style
-	activeBg := color.Color(color.RGBA{70, 70, 80, 255})
-	button.style.ActiveStyle = &Style{
-		BackgroundColor: &activeBg,
-	}
 
 	return button
 }
@@ -165,9 +149,9 @@ func (b *Button) Draw(screen *ebiten.Image) {
 		}
 		DrawSprite(screen, theme.SpriteSheet, coords, absBounds)
 	} else {
-		// Use vector-based rendering
-		DrawBackground(screen, absBounds, style)
-		DrawBorder(screen, absBounds, style)
+		// Use vector-based rendering with theme support
+		DrawBackgroundWithTheme(screen, absBounds, style, theme)
+		DrawBorderWithTheme(screen, absBounds, style, theme)
 	}
 
 	// Draw text
@@ -178,15 +162,12 @@ func (b *Button) Draw(screen *ebiten.Image) {
 		fontSize = *style.FontSize
 	}
 
+	// Get text color - prefer style, then theme, then default
 	textColor := color.RGBA{255, 255, 255, 255}
 	if style.ForegroundColor != nil {
-		r, g, bb, a := (*style.ForegroundColor).RGBA()
-		textColor = color.RGBA{
-			R: uint8(r >> 8),
-			G: uint8(g >> 8),
-			B: uint8(bb >> 8),
-			A: uint8(a >> 8),
-		}
+		textColor = colorToRGBA(*style.ForegroundColor)
+	} else if theme != nil {
+		textColor = colorToRGBA(theme.Colors.Text)
 	}
 
 	// Center text in button

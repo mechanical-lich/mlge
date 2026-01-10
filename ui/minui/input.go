@@ -33,22 +33,12 @@ func NewTextInput(id, placeholder string) *TextInput {
 	// Set default size
 	ti.SetSize(200, 28)
 
-	// Set default style
-	bgColor := color.Color(color.RGBA{255, 255, 255, 255})
-	borderColor := color.Color(color.RGBA{0, 0, 0, 255})
+	// Set default style - only structural properties, colors come from theme
 	borderWidth := 1
 	padding := NewEdgeInsetsLR(4, 8)
 
-	ti.style.BackgroundColor = &bgColor
-	ti.style.BorderColor = &borderColor
 	ti.style.BorderWidth = &borderWidth
 	ti.style.Padding = padding
-
-	// Focus style
-	focusBorderColor := color.Color(color.RGBA{0, 100, 200, 255})
-	ti.style.FocusStyle = &Style{
-		BorderColor: &focusBorderColor,
-	}
 
 	return ti
 }
@@ -188,6 +178,7 @@ func (ti *TextInput) Draw(screen *ebiten.Image) {
 	}
 
 	style := ti.GetComputedStyle()
+	theme := ti.GetTheme()
 
 	// Get absolute position for drawing
 	absX, absY := ti.GetAbsolutePosition()
@@ -198,27 +189,28 @@ func (ti *TextInput) Draw(screen *ebiten.Image) {
 		Height: ti.bounds.Height,
 	}
 
-	// Draw background
-	DrawBackground(screen, absBounds, style)
+	// Draw background with theme support
+	DrawBackgroundWithTheme(screen, absBounds, style, theme)
 
 	// Draw text or placeholder
 	contentBounds := GetContentBounds(absBounds, style)
 
 	displayText := ti.Text
-	textColor := color.RGBA{0, 0, 0, 255}
+	// Get text color from style, then theme, then default
+	textColor := color.RGBA{255, 255, 255, 255}
+	if theme != nil {
+		textColor = colorToRGBA(theme.Colors.Text)
+	}
+	if style.ForegroundColor != nil {
+		textColor = colorToRGBA(*style.ForegroundColor)
+	}
 
 	if displayText == "" && ti.Placeholder != "" {
 		displayText = ti.Placeholder
+		// Use disabled/secondary color for placeholder
 		textColor = color.RGBA{150, 150, 150, 255}
-	}
-
-	if style.ForegroundColor != nil && ti.Text != "" {
-		r, g, b, a := (*style.ForegroundColor).RGBA()
-		textColor = color.RGBA{
-			R: uint8(r >> 8),
-			G: uint8(g >> 8),
-			B: uint8(b >> 8),
-			A: uint8(a >> 8),
+		if theme != nil {
+			textColor = colorToRGBA(theme.Colors.TextSecondary)
 		}
 	}
 
@@ -252,7 +244,11 @@ func (ti *TextInput) Draw(screen *ebiten.Image) {
 			Width:  2,
 			Height: int(math.Ceil(textH)),
 		}
-		cursorColor := color.RGBA{0, 0, 0, 255}
+		// Get cursor color from theme or default
+		cursorColor := color.RGBA{255, 255, 255, 255}
+		if theme != nil {
+			cursorColor = colorToRGBA(theme.Colors.Text)
+		}
 
 		// Blink cursor
 		if (ebiten.TPS()*2/3)%2 == 0 {
@@ -260,8 +256,17 @@ func (ti *TextInput) Draw(screen *ebiten.Image) {
 		}
 	}
 
-	// Draw border
-	DrawBorder(screen, absBounds, style)
+	// Draw border with theme support (use focus color when focused)
+	if ti.focused && theme != nil {
+		focusBorderColor := color.Color(colorToRGBA(theme.Colors.Focus))
+		focusStyle := &Style{
+			BorderColor: &focusBorderColor,
+			BorderWidth: style.BorderWidth,
+		}
+		DrawBorderWithTheme(screen, absBounds, focusStyle, theme)
+	} else {
+		DrawBorderWithTheme(screen, absBounds, style, theme)
+	}
 }
 
 // GetText returns the current text
@@ -374,14 +379,14 @@ func (cb *Checkbox) Draw(screen *ebiten.Image) {
 	}
 
 	// Background
-	bgColor := color.RGBA{255, 255, 255, 255}
+	bgColor := color.RGBA{50, 50, 60, 255}
 	if cb.hovered {
-		bgColor = color.RGBA{240, 240, 255, 255}
+		bgColor = color.RGBA{60, 60, 75, 255}
 	}
 	DrawRect(screen, boxBounds, bgColor)
 
 	// Border
-	borderColor := color.RGBA{0, 0, 0, 255}
+	borderColor := color.RGBA{100, 100, 120, 255}
 	DrawRectStroke(screen, boxBounds, 1, borderColor)
 
 	// Check mark
@@ -399,7 +404,7 @@ func (cb *Checkbox) Draw(screen *ebiten.Image) {
 
 	// Draw label if present
 	if cb.Label != "" {
-		labelColor := color.RGBA{0, 0, 0, 255}
+		labelColor := color.RGBA{230, 230, 230, 255}
 		text.Draw(screen, cb.Label, 14.0, absX+24, absY+2, labelColor)
 	}
 }

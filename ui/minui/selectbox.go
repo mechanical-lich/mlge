@@ -34,14 +34,10 @@ func NewSelectBox(id string, items []string) *SelectBox {
 
 	sb.SetSize(140, 28)
 
-	// Default style similar to button
-	bgColor := color.Color(color.RGBA{240, 240, 245, 255})
-	borderColor := color.Color(color.RGBA{80, 80, 90, 255})
+	// Default style - only structural properties, colors come from theme
 	borderWidth := 1
 	padding := NewEdgeInsets(6)
 
-	sb.style.BackgroundColor = &bgColor
-	sb.style.BorderColor = &borderColor
 	sb.style.BorderWidth = &borderWidth
 	sb.style.Padding = padding
 
@@ -191,19 +187,22 @@ func (sb *SelectBox) Draw(screen *ebiten.Image) {
 	}
 
 	style := sb.GetComputedStyle()
+	theme := sb.GetTheme()
 	absX, absY := sb.GetAbsolutePosition()
 	absBounds := Rect{X: absX, Y: absY, Width: sb.bounds.Width, Height: sb.bounds.Height}
 
-	// Draw background and border
-	DrawBackground(screen, absBounds, style)
-	DrawBorder(screen, absBounds, style)
+	// Draw background and border with theme support
+	DrawBackgroundWithTheme(screen, absBounds, style, theme)
+	DrawBorderWithTheme(screen, absBounds, style, theme)
 
 	// Draw selected item text
 	contentBounds := GetContentBounds(absBounds, style)
-	textColor := color.RGBA{0, 0, 0, 255}
+	// Get text color from style, then theme, then default
+	textColor := color.RGBA{255, 255, 255, 255}
 	if style.ForegroundColor != nil {
-		r, g, b, a := (*style.ForegroundColor).RGBA()
-		textColor = color.RGBA{R: uint8(r >> 8), G: uint8(g >> 8), B: uint8(b >> 8), A: uint8(a >> 8)}
+		textColor = colorToRGBA(*style.ForegroundColor)
+	} else if theme != nil {
+		textColor = colorToRGBA(theme.Colors.Text)
 	}
 
 	selectedText := ""
@@ -216,8 +215,8 @@ func (sb *SelectBox) Draw(screen *ebiten.Image) {
 	}
 	text.Draw(screen, selectedText, float64(fontSize), contentBounds.X+4, contentBounds.Y+3, textColor)
 
-	// Draw arrow on right
-	arrowColor := color.RGBA{0, 0, 0, 255}
+	// Draw arrow on right with theme color
+	arrowColor := textColor
 	arrowX := absBounds.X + absBounds.Width - 16
 	arrowY := absBounds.Y + (absBounds.Height/2 - 6)
 	text.Draw(screen, ">", 12.0, arrowX, arrowY, arrowColor)
@@ -233,9 +232,9 @@ func (sb *SelectBox) Draw(screen *ebiten.Image) {
 			Height: sb.listBox.bounds.Height,
 		}
 
-		// Draw listbox background and border
+		// Draw listbox background and border with theme support
 		lbStyle := sb.listBox.GetComputedStyle()
-		DrawBackground(screen, dropdownBounds, lbStyle)
+		DrawBackgroundWithTheme(screen, dropdownBounds, lbStyle, theme)
 
 		// Draw listbox items
 		contentBounds := GetContentBounds(dropdownBounds, lbStyle)
@@ -246,6 +245,17 @@ func (sb *SelectBox) Draw(screen *ebiten.Image) {
 		endIndex := startIndex + visibleItems + 1
 		if endIndex > len(sb.listBox.Items) {
 			endIndex = len(sb.listBox.Items)
+		}
+
+		// Get colors from theme
+		highlightColor := color.RGBA{0, 100, 200, 255}
+		hoverColor := color.RGBA{70, 100, 150, 255}
+		if theme != nil {
+			highlightColor = colorToRGBA(theme.Colors.Primary)
+			hoverColor = colorToRGBA(theme.Colors.Surface)
+			hoverColor.R = min(hoverColor.R+20, 255)
+			hoverColor.G = min(hoverColor.G+20, 255)
+			hoverColor.B = min(hoverColor.B+20, 255)
 		}
 
 		for i := startIndex; i < endIndex; i++ {
@@ -259,15 +269,16 @@ func (sb *SelectBox) Draw(screen *ebiten.Image) {
 
 			// Draw selection highlight
 			if i == sb.listBox.SelectedIndex {
-				highlightColor := color.RGBA{0, 100, 200, 255}
 				DrawRect(clipArea, itemBounds, highlightColor)
 			} else if i == sb.listBox.HoveredIndex {
-				hoverColor := color.RGBA{200, 220, 255, 255}
 				DrawRect(clipArea, itemBounds, hoverColor)
 			}
 
-			// Draw item text
-			itemTextColor := color.RGBA{0, 0, 0, 255}
+			// Draw item text with theme colors
+			itemTextColor := color.RGBA{255, 255, 255, 255}
+			if theme != nil {
+				itemTextColor = colorToRGBA(theme.Colors.Text)
+			}
 			if i == sb.listBox.SelectedIndex {
 				itemTextColor = color.RGBA{255, 255, 255, 255}
 			}
@@ -275,31 +286,34 @@ func (sb *SelectBox) Draw(screen *ebiten.Image) {
 			text.Draw(clipArea, sb.listBox.Items[i], 14.0, itemBounds.X+4, itemBounds.Y+3, itemTextColor)
 		}
 
-		// Draw border
-		DrawBorder(screen, dropdownBounds, lbStyle)
+		// Draw border with theme support
+		DrawBorderWithTheme(screen, dropdownBounds, lbStyle, theme)
 
 		// Draw scrollbar if needed
 		totalHeight := len(sb.listBox.Items) * sb.listBox.itemHeight
 		if totalHeight > contentBounds.Height {
-			sb.drawScrollbar(screen, contentBounds, dropdownBounds)
+			sb.drawScrollbar(screen, contentBounds, dropdownBounds, theme)
 		}
 	}
 }
 
 // drawScrollbar draws the scrollbar for the dropdown list
-func (sb *SelectBox) drawScrollbar(screen *ebiten.Image, contentBounds Rect, dropdownBounds Rect) {
+func (sb *SelectBox) drawScrollbar(screen *ebiten.Image, contentBounds Rect, dropdownBounds Rect, theme *Theme) {
 	scrollbarWidth := 16
 	scrollbarX := dropdownBounds.X + dropdownBounds.Width - scrollbarWidth
 	scrollbarHeight := contentBounds.Height
 
-	// Draw scrollbar track
+	// Draw scrollbar track with theme color
 	trackBounds := Rect{
 		X:      scrollbarX,
 		Y:      contentBounds.Y,
 		Width:  scrollbarWidth,
 		Height: scrollbarHeight,
 	}
-	trackColor := color.RGBA{200, 200, 200, 255}
+	trackColor := color.RGBA{40, 40, 50, 255}
+	if theme != nil {
+		trackColor = colorToRGBA(theme.Colors.Surface)
+	}
 	DrawRect(screen, trackBounds, trackColor)
 
 	// Calculate thumb size and position
@@ -311,7 +325,7 @@ func (sb *SelectBox) drawScrollbar(screen *ebiten.Image, contentBounds Rect, dro
 
 	thumbY := contentBounds.Y + (sb.listBox.scrollOffset*(scrollbarHeight-thumbHeight))/(totalHeight-contentBounds.Height)
 
-	// Draw scrollbar thumb
+	// Draw scrollbar thumb with theme color
 	thumbBounds := Rect{
 		X:      scrollbarX + 2,
 		Y:      thumbY,
@@ -319,6 +333,9 @@ func (sb *SelectBox) drawScrollbar(screen *ebiten.Image, contentBounds Rect, dro
 		Height: thumbHeight,
 	}
 	thumbColor := color.RGBA{120, 120, 120, 255}
+	if theme != nil {
+		thumbColor = colorToRGBA(theme.Colors.Border)
+	}
 	DrawRoundedRect(screen, thumbBounds, 4, thumbColor)
 }
 

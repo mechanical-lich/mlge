@@ -9,6 +9,17 @@ import (
 	"github.com/mechanical-lich/mlge/resource"
 )
 
+// colorToRGBA converts a color.Color to color.RGBA
+func colorToRGBA(c color.Color) color.RGBA {
+	r, g, b, a := c.RGBA()
+	return color.RGBA{
+		R: uint8(r >> 8),
+		G: uint8(g >> 8),
+		B: uint8(b >> 8),
+		A: uint8(a >> 8),
+	}
+}
+
 // ---- Sprite-based rendering functions ----
 
 // DrawSprite draws a sprite from a sprite sheet, scaled to fit the bounds
@@ -240,6 +251,114 @@ func DrawBorder(screen *ebiten.Image, bounds Rect, style *Style) {
 
 	opacity := float32(1.0)
 	if style.Opacity != nil {
+		opacity = float32(*style.Opacity)
+	}
+
+	// Apply opacity
+	r, g, b, a := borderColor.RGBA()
+	borderColorWithOpacity := color.RGBA{
+		R: uint8(r >> 8),
+		G: uint8(g >> 8),
+		B: uint8(b >> 8),
+		A: uint8(float32(a>>8) * opacity),
+	}
+
+	if borderRadius > 0 {
+		DrawRoundedRectStroke(screen, bounds, borderRadius, float32(borderWidth), borderColorWithOpacity)
+	} else {
+		DrawRectStroke(screen, bounds, float32(borderWidth), borderColorWithOpacity)
+	}
+}
+
+// DrawBackgroundWithTheme draws the background using theme colors as fallback
+func DrawBackgroundWithTheme(screen *ebiten.Image, bounds Rect, style *Style, theme *Theme) {
+	if style == nil && theme == nil {
+		return
+	}
+
+	// Get background color - prefer explicit style, fall back to theme
+	var bgColor color.Color = color.Transparent
+	if style != nil && style.BackgroundColor != nil {
+		bgColor = *style.BackgroundColor
+	} else if theme != nil {
+		bgColor = theme.Colors.Surface
+	}
+
+	// If there's a background image, draw it
+	if style != nil && style.BackgroundImage != nil && *style.BackgroundImage != "" {
+		img, ok := resource.Textures[*style.BackgroundImage]
+		if ok && img != nil {
+			op := &ebiten.DrawImageOptions{}
+			imgBounds := img.Bounds()
+			scaleX := float64(bounds.Width) / float64(imgBounds.Dx())
+			scaleY := float64(bounds.Height) / float64(imgBounds.Dy())
+			op.GeoM.Scale(scaleX, scaleY)
+			op.GeoM.Translate(float64(bounds.X), float64(bounds.Y))
+			if style.Opacity != nil {
+				op.ColorScale.ScaleAlpha(float32(*style.Opacity))
+			}
+			screen.DrawImage(img, op)
+			return
+		}
+	}
+
+	// Draw solid color background with border radius
+	borderRadius := 0
+	if style != nil && style.BorderRadius != nil {
+		borderRadius = *style.BorderRadius
+	}
+
+	opacity := float32(1.0)
+	if style != nil && style.Opacity != nil {
+		opacity = float32(*style.Opacity)
+	}
+
+	// Apply opacity to background color
+	r, g, b, a := bgColor.RGBA()
+	bgColorWithOpacity := color.RGBA{
+		R: uint8(r >> 8),
+		G: uint8(g >> 8),
+		B: uint8(b >> 8),
+		A: uint8(float32(a>>8) * opacity),
+	}
+
+	if borderRadius > 0 {
+		DrawRoundedRect(screen, bounds, borderRadius, bgColorWithOpacity)
+	} else {
+		DrawRect(screen, bounds, bgColorWithOpacity)
+	}
+}
+
+// DrawBorderWithTheme draws the border using theme colors as fallback
+func DrawBorderWithTheme(screen *ebiten.Image, bounds Rect, style *Style, theme *Theme) {
+	if style == nil && theme == nil {
+		return
+	}
+
+	borderWidth := 0
+	if style != nil && style.BorderWidth != nil {
+		borderWidth = *style.BorderWidth
+	}
+
+	if borderWidth <= 0 {
+		return
+	}
+
+	// Get border color - prefer explicit style, fall back to theme
+	var borderColor color.Color = color.RGBA{80, 80, 90, 255}
+	if style != nil && style.BorderColor != nil {
+		borderColor = *style.BorderColor
+	} else if theme != nil {
+		borderColor = theme.Colors.Border
+	}
+
+	borderRadius := 0
+	if style != nil && style.BorderRadius != nil {
+		borderRadius = *style.BorderRadius
+	}
+
+	opacity := float32(1.0)
+	if style != nil && style.Opacity != nil {
 		opacity = float32(*style.Opacity)
 	}
 

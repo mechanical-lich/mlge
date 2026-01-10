@@ -87,12 +87,13 @@ func (p *ProgressBar) Draw(screen *ebiten.Image) {
 	}
 
 	style := p.GetComputedStyle()
+	theme := p.GetTheme()
 	absX, absY := p.GetAbsolutePosition()
 
 	absBounds := Rect{X: absX, Y: absY, Width: p.bounds.Width, Height: p.bounds.Height}
 
-	// Draw background
-	DrawBackground(screen, absBounds, style)
+	// Draw background with theme support
+	DrawBackgroundWithTheme(screen, absBounds, style, theme)
 
 	// Content bounds (accounts for padding & border)
 	content := GetContentBounds(absBounds, style)
@@ -108,11 +109,21 @@ func (p *ProgressBar) Draw(screen *ebiten.Image) {
 
 	if filledW > 0 {
 		filledRect := Rect{X: content.X, Y: content.Y, Width: filledW, Height: content.Height}
-		DrawRect(screen, filledRect, color.NRGBA{R: 0x33, G: 0x99, B: 0xff, A: 0xff})
+		// Get fill color from theme or default
+		fillColor := color.NRGBA{R: 0x33, G: 0x99, B: 0xff, A: 0xff}
+		if theme != nil {
+			fillColor = color.NRGBA{
+				R: colorToRGBA(theme.Colors.Primary).R,
+				G: colorToRGBA(theme.Colors.Primary).G,
+				B: colorToRGBA(theme.Colors.Primary).B,
+				A: 0xff,
+			}
+		}
+		DrawRect(screen, filledRect, fillColor)
 	}
 
-	// Draw border
-	DrawBorder(screen, absBounds, style)
+	// Draw border with theme support
+	DrawBorderWithTheme(screen, absBounds, style, theme)
 
 	// Optionally draw percent text centered
 	if p.ShowPercent {
@@ -127,10 +138,12 @@ func (p *ProgressBar) Draw(screen *ebiten.Image) {
 		// Center text
 		textX := content.X + (content.Width / 2)
 		textY := content.Y + (content.Height-fontSize)/2
-		textColor := color.RGBA{0, 0, 0, 255}
+		// Get text color from style, then theme, then default
+		textColor := color.RGBA{230, 230, 230, 255}
 		if style != nil && style.ForegroundColor != nil {
-			r, g, b, a := (*style.ForegroundColor).RGBA()
-			textColor = color.RGBA{R: uint8(r >> 8), G: uint8(g >> 8), B: uint8(b >> 8), A: uint8(a >> 8)}
+			textColor = colorToRGBA(*style.ForegroundColor)
+		} else if theme != nil {
+			textColor = colorToRGBA(theme.Colors.Text)
 		}
 
 		text.Draw(screen, textStr, float64(fontSize), textX, textY, textColor)

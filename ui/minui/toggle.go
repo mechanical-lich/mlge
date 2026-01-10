@@ -40,13 +40,11 @@ func NewToggle(id, text string) *Toggle {
 	// Set default size
 	toggle.SetSize(len(text)*10+40, 28)
 
-	// Set default style
-	borderColor := color.Color(color.RGBA{100, 100, 120, 255})
+	// Set default style - only structural properties, colors come from theme
 	borderWidth := 2
 	borderRadius := 4
 	padding := NewEdgeInsets(6)
 
-	toggle.style.BorderColor = &borderColor
 	toggle.style.BorderWidth = &borderWidth
 	toggle.style.BorderRadius = &borderRadius
 	toggle.style.Padding = padding
@@ -167,18 +165,23 @@ func (t *Toggle) Draw(screen *ebiten.Image) {
 		}
 		DrawSprite(screen, theme.SpriteSheet, coords, switchBounds)
 	} else {
-		// Use vector-based rendering
+		// Use vector-based rendering with theme colors
 		// Draw switch track
 		trackColor := color.RGBA{80, 80, 90, 255}
+		if theme != nil {
+			trackColor = colorToRGBA(theme.Colors.Surface)
+		}
 		if t.On {
-			trackColor = color.RGBA{80, 140, 200, 255}
+			if theme != nil {
+				trackColor = colorToRGBA(theme.Colors.Primary)
+			} else {
+				trackColor = color.RGBA{80, 140, 200, 255}
+			}
 		}
 		if t.hovered {
-			if t.On {
-				trackColor = color.RGBA{100, 160, 220, 255}
-			} else {
-				trackColor = color.RGBA{100, 100, 110, 255}
-			}
+			trackColor.R = min(trackColor.R+20, 255)
+			trackColor.G = min(trackColor.G+20, 255)
+			trackColor.B = min(trackColor.B+20, 255)
 		}
 
 		trackBounds := Rect{X: switchX, Y: switchY, Width: switchWidth, Height: switchHeight}
@@ -193,6 +196,9 @@ func (t *Toggle) Draw(screen *ebiten.Image) {
 		knobY := switchY + 2
 
 		knobColor := color.RGBA{255, 255, 255, 255}
+		if theme != nil {
+			knobColor = colorToRGBA(theme.Colors.Text)
+		}
 		vector.DrawFilledCircle(screen, float32(knobX)+float32(knobSize)/2, float32(knobY)+float32(knobSize)/2, float32(knobSize)/2, knobColor, true)
 	}
 
@@ -203,10 +209,12 @@ func (t *Toggle) Draw(screen *ebiten.Image) {
 			fontSize = *style.FontSize
 		}
 
+		// Get text color from style, then theme, then default
 		textColor := color.RGBA{255, 255, 255, 255}
 		if style.ForegroundColor != nil {
-			r, g, b, a := (*style.ForegroundColor).RGBA()
-			textColor = color.RGBA{R: uint8(r >> 8), G: uint8(g >> 8), B: uint8(b >> 8), A: uint8(a >> 8)}
+			textColor = colorToRGBA(*style.ForegroundColor)
+		} else if theme != nil {
+			textColor = colorToRGBA(theme.Colors.Text)
 		}
 
 		textX := switchX + switchWidth + 8

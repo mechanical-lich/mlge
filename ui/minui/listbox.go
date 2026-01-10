@@ -34,13 +34,9 @@ func NewListBox(id string, items []string) *ListBox {
 	// Set default size
 	lb.SetSize(200, 150)
 
-	// Set default style
-	bgColor := color.Color(color.RGBA{255, 255, 255, 255})
-	borderColor := color.Color(color.RGBA{0, 0, 0, 255})
+	// Set default style - only structural properties, colors come from theme
 	borderWidth := 1
 
-	lb.style.BackgroundColor = &bgColor
-	lb.style.BorderColor = &borderColor
 	lb.style.BorderWidth = &borderWidth
 
 	return lb
@@ -160,6 +156,7 @@ func (lb *ListBox) Draw(screen *ebiten.Image) {
 	}
 
 	style := lb.GetComputedStyle()
+	theme := lb.GetTheme()
 
 	// Get absolute position for drawing
 	absX, absY := lb.GetAbsolutePosition()
@@ -170,8 +167,8 @@ func (lb *ListBox) Draw(screen *ebiten.Image) {
 		Height: lb.bounds.Height,
 	}
 
-	// Draw background
-	DrawBackground(screen, absBounds, style)
+	// Draw background with theme support
+	DrawBackgroundWithTheme(screen, absBounds, style, theme)
 
 	// Draw items
 	contentBounds := GetContentBounds(absBounds, style)
@@ -185,6 +182,17 @@ func (lb *ListBox) Draw(screen *ebiten.Image) {
 		endIndex = len(lb.Items)
 	}
 
+	// Get colors from theme
+	highlightColor := color.RGBA{0, 100, 200, 255}
+	hoverColor := color.RGBA{70, 100, 150, 255}
+	if theme != nil {
+		highlightColor = colorToRGBA(theme.Colors.Primary)
+		hoverColor = colorToRGBA(theme.Colors.Surface)
+		hoverColor.R = min(hoverColor.R+20, 255)
+		hoverColor.G = min(hoverColor.G+20, 255)
+		hoverColor.B = min(hoverColor.B+20, 255)
+	}
+
 	for i := startIndex; i < endIndex; i++ {
 		itemY := contentBounds.Y + (i * lb.itemHeight) - lb.scrollOffset
 		itemBounds := Rect{
@@ -196,45 +204,50 @@ func (lb *ListBox) Draw(screen *ebiten.Image) {
 
 		// Draw selection highlight
 		if i == lb.SelectedIndex {
-			highlightColor := color.RGBA{0, 100, 200, 255}
 			DrawRect(clipArea, itemBounds, highlightColor)
 		} else if i == lb.HoveredIndex {
-			hoverColor := color.RGBA{200, 220, 255, 255}
 			DrawRect(clipArea, itemBounds, hoverColor)
 		}
 
-		// Draw item text
-		textColor := color.RGBA{0, 0, 0, 255}
+		// Draw item text with theme colors
+		textColor := color.RGBA{255, 255, 255, 255}
+		if theme != nil {
+			textColor = colorToRGBA(theme.Colors.Text)
+		}
 		if i == lb.SelectedIndex {
+			// Selected items should have contrasting text
 			textColor = color.RGBA{255, 255, 255, 255}
 		}
 
 		text.Draw(clipArea, lb.Items[i], 14.0, itemBounds.X+4, itemBounds.Y+3, textColor)
 	}
 
-	// Draw border
-	DrawBorder(screen, absBounds, style)
+	// Draw border with theme support
+	DrawBorderWithTheme(screen, absBounds, style, theme)
 
 	// Draw scrollbar if needed
 	if len(lb.Items)*lb.itemHeight > contentBounds.Height {
-		lb.drawScrollbar(screen, contentBounds, absBounds)
+		lb.drawScrollbar(screen, contentBounds, absBounds, theme)
 	}
 }
 
 // drawScrollbar draws the scrollbar
-func (lb *ListBox) drawScrollbar(screen *ebiten.Image, contentBounds Rect, absBounds Rect) {
+func (lb *ListBox) drawScrollbar(screen *ebiten.Image, contentBounds Rect, absBounds Rect, theme *Theme) {
 	scrollbarWidth := 16
 	scrollbarX := absBounds.X + absBounds.Width - scrollbarWidth
 	scrollbarHeight := contentBounds.Height // Use content height, not absolute bounds height
 
-	// Draw scrollbar track
+	// Draw scrollbar track with theme color
 	trackBounds := Rect{
 		X:      scrollbarX,
 		Y:      contentBounds.Y, // Start at content area
 		Width:  scrollbarWidth,
 		Height: scrollbarHeight,
 	}
-	trackColor := color.RGBA{200, 200, 200, 255}
+	trackColor := color.RGBA{40, 40, 50, 255}
+	if theme != nil {
+		trackColor = colorToRGBA(theme.Colors.Surface)
+	}
 	DrawRect(screen, trackBounds, trackColor)
 
 	// Calculate thumb size and position
@@ -246,7 +259,7 @@ func (lb *ListBox) drawScrollbar(screen *ebiten.Image, contentBounds Rect, absBo
 
 	thumbY := contentBounds.Y + (lb.scrollOffset*(scrollbarHeight-thumbHeight))/(totalHeight-contentBounds.Height)
 
-	// Draw scrollbar thumb
+	// Draw scrollbar thumb with theme color
 	thumbBounds := Rect{
 		X:      scrollbarX + 2,
 		Y:      thumbY,
@@ -254,6 +267,9 @@ func (lb *ListBox) drawScrollbar(screen *ebiten.Image, contentBounds Rect, absBo
 		Height: thumbHeight,
 	}
 	thumbColor := color.RGBA{120, 120, 120, 255}
+	if theme != nil {
+		thumbColor = colorToRGBA(theme.Colors.Border)
+	}
 	DrawRoundedRect(screen, thumbBounds, 4, thumbColor)
 }
 

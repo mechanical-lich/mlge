@@ -30,14 +30,10 @@ func NewRadioButton(id, label string) *RadioButton {
 
 	rb.SetSize(20, 20)
 
-	// Set default style
-	borderColor := color.Color(color.RGBA{100, 100, 120, 255})
+	// Set default style - only structural properties, colors come from theme
 	borderWidth := 2
-	bgColor := color.Color(color.RGBA{255, 255, 255, 255})
 
-	rb.style.BorderColor = &borderColor
 	rb.style.BorderWidth = &borderWidth
-	rb.style.BackgroundColor = &bgColor
 
 	return rb
 }
@@ -153,20 +149,20 @@ func (rb *RadioButton) Draw(screen *ebiten.Image) {
 		}
 		DrawSprite(screen, theme.SpriteSheet, coords, absBounds)
 	} else {
-		// Use vector-based rendering (original code)
-		// Get colors
+		// Use vector-based rendering with theme colors
+		// Get colors from theme or style
 		borderColor := color.RGBA{100, 100, 120, 255}
 		if style.BorderColor != nil {
-			if rgba, ok := (*style.BorderColor).(color.RGBA); ok {
-				borderColor = rgba
-			}
+			borderColor = colorToRGBA(*style.BorderColor)
+		} else if theme != nil {
+			borderColor = colorToRGBA(theme.Colors.Border)
 		}
 
-		bgColor := color.RGBA{255, 255, 255, 255}
+		bgColor := color.RGBA{50, 50, 60, 255}
 		if style.BackgroundColor != nil {
-			if rgba, ok := (*style.BackgroundColor).(color.RGBA); ok {
-				bgColor = rgba
-			}
+			bgColor = colorToRGBA(*style.BackgroundColor)
+		} else if theme != nil {
+			bgColor = colorToRGBA(theme.Colors.Surface)
 		}
 
 		borderWidth := float32(2.0)
@@ -189,15 +185,26 @@ func (rb *RadioButton) Draw(screen *ebiten.Image) {
 		if rb.Selected {
 			innerRadius := radius * 0.5
 			selectedColor := color.RGBA{100, 120, 180, 255}
+			if theme != nil {
+				selectedColor = colorToRGBA(theme.Colors.Primary)
+			}
 			if rb.hovered {
-				selectedColor = color.RGBA{120, 140, 200, 255}
+				selectedColor.R = min(selectedColor.R+20, 255)
+				selectedColor.G = min(selectedColor.G+20, 255)
+				selectedColor.B = min(selectedColor.B+20, 255)
 			}
 			vector.DrawFilledCircle(screen, centerX, centerY, innerRadius, selectedColor, true)
 		}
 
 		// Highlight on hover
 		if rb.hovered && !rb.Selected {
-			hoverColor := color.RGBA{220, 220, 230, 255}
+			hoverColor := color.RGBA{60, 60, 75, 255}
+			if theme != nil {
+				hoverColor = colorToRGBA(theme.Colors.Surface)
+				hoverColor.R = min(hoverColor.R+10, 255)
+				hoverColor.G = min(hoverColor.G+10, 255)
+				hoverColor.B = min(hoverColor.B+10, 255)
+			}
 			vector.DrawFilledCircle(screen, centerX, centerY, radius-borderWidth, hoverColor, true)
 		}
 	}
@@ -209,10 +216,12 @@ func (rb *RadioButton) Draw(screen *ebiten.Image) {
 			fontSize = *style.FontSize
 		}
 
-		textColor := color.RGBA{0, 0, 0, 255}
+		// Get text color from style, then theme, then default
+		textColor := color.RGBA{230, 230, 230, 255}
 		if style.ForegroundColor != nil {
-			r, g, b, a := (*style.ForegroundColor).RGBA()
-			textColor = color.RGBA{R: uint8(r >> 8), G: uint8(g >> 8), B: uint8(b >> 8), A: uint8(a >> 8)}
+			textColor = colorToRGBA(*style.ForegroundColor)
+		} else if theme != nil {
+			textColor = colorToRGBA(theme.Colors.Text)
 		}
 
 		// Position text to the right of the circle with some spacing
