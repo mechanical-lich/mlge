@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image/color"
 	"log"
+	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	minui "github.com/mechanical-lich/mlge/ui/minui"
@@ -392,116 +393,21 @@ func (g *Game) createRadioButtonDemo() {
 }
 
 func (g *Game) setupFileBrowserDemo() {
-	// Create file browser modal
-	modal := minui.NewModal("fileBrowser", "kiss_sdl example 1", 580, 400)
-	modal.SetPosition(30, 40)
+	// Use the new FileModal component for Load/Save dialogs
+	fm := minui.NewFileModal("fileBrowser", "File Browser", 580, 400, "load")
+	fm.SetPosition(30, 40)
+	cwd, _ := os.Getwd()
+	fm.SetDefaultPath(cwd)
 
-	// Create main container (use Panel for manual positioning)
-	mainContainer := minui.NewPanel("mainContainer")
-	mainContainer.SetBounds(minui.Rect{X: 10, Y: 10, Width: 560, Height: 300})
-
-	// Folders panel (use Panel for manual positioning)
-	foldersPanel := minui.NewPanel("foldersPanel")
-	foldersPanel.SetBounds(minui.Rect{X: 0, Y: 0, Width: 270, Height: 300})
-
-	foldersLabel := minui.NewLabel("foldersLabel", "Folders")
-	foldersLabel.SetBounds(minui.Rect{X: 0, Y: 0, Width: 270, Height: 20})
-
-	foldersList := minui.NewListBox("foldersList", []string{
-		"../",
-		"./",
-		".git/",
-	})
-	foldersList.SetBounds(minui.Rect{X: 0, Y: 22, Width: 270, Height: 278})
-
-	foldersPanel.AddChild(foldersLabel)
-	foldersPanel.AddChild(foldersList)
-
-	// Files panel (use Panel for manual positioning)
-	filesPanel := minui.NewPanel("filesPanel")
-	filesPanel.SetBounds(minui.Rect{X: 280, Y: 0, Width: 280, Height: 300})
-
-	filesLabel := minui.NewLabel("filesLabel", "Files")
-	filesLabel.SetBounds(minui.Rect{X: 0, Y: 0, Width: 280, Height: 20})
-
-	filesList := minui.NewListBox("filesList", []string{
-		"README.md",
-		"kiss_LICENSE",
-		"kiss_active.png",
-		"kiss_bar.png",
-		"kiss_down.png",
-		"README.md",
-		"kiss_LICENSE",
-		"kiss_active.png",
-		"kiss_bar.png",
-		"kiss_down.png",
-		"README.md",
-		"kiss_LICENSE",
-		"kiss_active.png",
-		"kiss_bar.png",
-		"kiss_down.png",
-	})
-	filesList.SetBounds(minui.Rect{X: 0, Y: 22, Width: 280, Height: 278})
-
-	filesPanel.AddChild(filesLabel)
-	filesPanel.AddChild(filesList)
-
-	mainContainer.AddChild(foldersPanel)
-	mainContainer.AddChild(filesPanel)
-	modal.AddChild(mainContainer)
-
-	// Create bottom panel with path and buttons
-	pathLabel := minui.NewLabel("pathLabel", "/usr/local/projects/kiss_sdl/")
-	pathLabel.SetBounds(minui.Rect{X: 10, Y: 320, Width: 300, Height: 20})
-
-	pathInput := minui.NewTextInput("pathInput", "kiss")
-	pathInput.SetText("kiss")
-	pathInput.SetBounds(minui.Rect{X: 10, Y: 342, Width: 560, Height: 28})
-
-	// Buttons
-	okButton := minui.NewButton("okButton", "OK")
-	okButton.SetBounds(minui.Rect{X: 390, Y: 378, Width: 80, Height: 32})
-	okButton.OnClick = func() {
-		fmt.Println("OK clicked:", pathInput.GetText())
+	fm.OnSelect = func(path string) {
+		fmt.Println("Selected path:", path)
+	}
+	fm.OnCancel = func() {
+		fmt.Println("File dialog cancelled")
 	}
 
-	cancelButton := minui.NewButton("cancelButton", "Cancel")
-	cancelButton.SetBounds(minui.Rect{X: 480, Y: 378, Width: 80, Height: 32})
-	cancelButton.OnClick = func() {
-		modal.SetVisible(false)
-	}
-
-	modal.AddChild(pathLabel)
-	modal.AddChild(pathInput)
-	modal.AddChild(okButton)
-	modal.AddChild(cancelButton)
-
-	// Add selection modal for folder click
-	foldersList.OnSelect = func(index int, item string) {
-		selectionModal := minui.NewModal("selectionModal", "Info", 450, 200)
-		selectionModal.SetPosition(95, 140)
-
-		message := minui.NewLabel("message", fmt.Sprintf("The following path was selected:\n%s%s", "/usr/local/projects/kiss_sdl/", item))
-		message.SetBounds(minui.Rect{X: 20, Y: 20, Width: 410, Height: 80})
-
-		messageInput := minui.NewTextInput("messageInput", "")
-		messageInput.SetBounds(minui.Rect{X: 20, Y: 100, Width: 410, Height: 28})
-
-		okBtn := minui.NewButton("modalOkBtn", "OK")
-		okBtn.SetBounds(minui.Rect{X: 180, Y: 140, Width: 80, Height: 32})
-		okBtn.OnClick = func() {
-			g.gui.RemoveModal(selectionModal)
-		}
-
-		selectionModal.AddChild(message)
-		selectionModal.AddChild(messageInput)
-		selectionModal.AddChild(okBtn)
-
-		g.gui.AddModal(selectionModal)
-	}
-
-	g.fileBrowser = modal
-	g.gui.AddModal(modal)
+	g.fileBrowser = fm.Modal
+	g.gui.AddModal(fm.Modal)
 }
 
 func (g *Game) setupDropdownDemo() {

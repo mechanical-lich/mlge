@@ -79,18 +79,20 @@ func (lb *ListBox) Update() {
 
 	// Handle click
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		if lb.HoveredIndex != -1 {
+		if lb.HoveredIndex >= 0 && lb.HoveredIndex < len(lb.Items) {
 			lb.SelectedIndex = lb.HoveredIndex
-			if lb.OnSelect != nil {
+			if lb.OnSelect != nil && lb.SelectedIndex >= 0 && lb.SelectedIndex < len(lb.Items) {
 				lb.OnSelect(lb.SelectedIndex, lb.Items[lb.SelectedIndex])
 			}
 			// Fire event
-			event.GetQueuedInstance().QueueEvent(ListBoxSelectEvent{
-				ListBoxID:     lb.GetID(),
-				ListBox:       lb,
-				SelectedIndex: lb.SelectedIndex,
-				SelectedItem:  lb.Items[lb.SelectedIndex],
-			})
+			if lb.SelectedIndex >= 0 && lb.SelectedIndex < len(lb.Items) {
+				event.GetQueuedInstance().QueueEvent(ListBoxSelectEvent{
+					ListBoxID:     lb.GetID(),
+					ListBox:       lb,
+					SelectedIndex: lb.SelectedIndex,
+					SelectedItem:  lb.Items[lb.SelectedIndex],
+				})
+			}
 		}
 	}
 
@@ -209,11 +211,14 @@ func (lb *ListBox) Draw(screen *ebiten.Image) {
 			DrawRect(clipArea, itemBounds, hoverColor)
 		}
 
-		// Draw item text with theme colors
+		// Draw item text with preference order: explicit style ForegroundColor -> theme Text -> default
 		textColor := color.RGBA{255, 255, 255, 255}
-		if theme != nil {
+		if style != nil && style.ForegroundColor != nil {
+			textColor = colorToRGBA(*style.ForegroundColor)
+		} else if theme != nil {
 			textColor = colorToRGBA(theme.Colors.Text)
 		}
+
 		if i == lb.SelectedIndex {
 			// Selected items should have contrasting text
 			textColor = color.RGBA{255, 255, 255, 255}

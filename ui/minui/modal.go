@@ -50,6 +50,10 @@ func NewModal(id, title string, width, height int) *Modal {
 	modal.style.BorderWidth = &borderWidth
 	modal.style.BorderRadius = &borderRadius
 
+	// Default opaque background for modal (prevent transparent interior)
+	bgColor := color.Color(color.RGBA{30, 30, 35, 255})
+	modal.style.BackgroundColor = &bgColor
+
 	return modal
 }
 
