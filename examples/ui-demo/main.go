@@ -6,12 +6,12 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/mechanical-lich/mlge/event"
 	"github.com/mechanical-lich/mlge/resource"
-	ui "github.com/mechanical-lich/mlge/ui/v2"
-	containers "github.com/mechanical-lich/mlge/ui/v2/containers"
-	elements "github.com/mechanical-lich/mlge/ui/v2/elements"
-	theming "github.com/mechanical-lich/mlge/ui/v2/theming"
-	validation "github.com/mechanical-lich/mlge/ui/v2/validation"
-	views "github.com/mechanical-lich/mlge/ui/v2/views"
+	ui "github.com/mechanical-lich/mlge/ui/themed"
+	containers "github.com/mechanical-lich/mlge/ui/themed/containers"
+	elements "github.com/mechanical-lich/mlge/ui/themed/elements"
+	theming "github.com/mechanical-lich/mlge/ui/themed/theming"
+	validation "github.com/mechanical-lich/mlge/ui/themed/validation"
+	views "github.com/mechanical-lich/mlge/ui/themed/views"
 )
 
 const (

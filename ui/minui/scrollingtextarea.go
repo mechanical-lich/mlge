@@ -5,7 +5,7 @@ import (
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/mechanical-lich/mlge/text/v2"
+	"github.com/mechanical-lich/mlge/text"
 )
 
 // ScrollingTextArea is a multi-line text display with scrolling support

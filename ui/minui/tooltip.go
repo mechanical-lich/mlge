@@ -4,7 +4,7 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/mechanical-lich/mlge/text/v2"
+	"github.com/mechanical-lich/mlge/text"
 )
 
 // TooltipPosition defines where the tooltip appears relative to target

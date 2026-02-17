@@ -7,7 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/mechanical-lich/mlge/event"
-	"github.com/mechanical-lich/mlge/text/v2"
+	"github.com/mechanical-lich/mlge/text"
 )
 
 // ToggleChangeEvent is fired when a toggle state changes

@@ -7,7 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/mechanical-lich/mlge/event"
-	"github.com/mechanical-lich/mlge/text/v2"
+	"github.com/mechanical-lich/mlge/text"
 )
 
 // TextInput is a single-line text input field

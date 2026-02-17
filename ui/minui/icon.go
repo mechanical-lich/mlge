@@ -5,7 +5,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/mechanical-lich/mlge/resource"
-	"github.com/mechanical-lich/mlge/text/v2"
+	"github.com/mechanical-lich/mlge/text"
 )
 
 // Icon defines a sprite icon from a sprite sheet

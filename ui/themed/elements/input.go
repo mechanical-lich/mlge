@@ -1,0 +1,238 @@
+package ui
+
+import (
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/hajimehoshi/ebiten/v2/vector"
+	"github.com/mechanical-lich/mlge/resource"
+	"github.com/mechanical-lich/mlge/text"
+	theming "github.com/mechanical-lich/mlge/ui/themed/theming"
+	validation "github.com/mechanical-lich/mlge/ui/themed/validation"
+)
+
+// Represents a text input field element.
+type InputField struct {
+	ElementBase
+	MaxLength       int
+	Value           []rune
+	Cursor          int                  // index in Value
+	Placeholder     string               // Placeholder text when empty
+	IsPassword      bool                 // Hide characters with bullets
+	Validator       validation.Validator // Optional validator
+	ValidationError error                // Current validation error
+	OnChange        func(value string)   // Optional onchange handler function
+	OnSubmit        func(value string)   // Optional submit handler (Enter key)
+	selectionStart  int                  // Start of text selection
+	selectionEnd    int                  // End of text selection
+}
+
+// Creates a new input field with the given parameters.
+func NewInputField(name string, x, y, width, maxLength int) *InputField {
+	// Generate string l
+	_, h := text.Measure("A", 16)
+	return &InputField{
+		ElementBase: ElementBase{
+			Name:   name,
+			X:      x,
+			Y:      y,
+			Width:  width,
+			Height: int(h + 10), // Add some padding
+			Op:     &ebiten.DrawImageOptions{},
+		},
+		MaxLength: maxLength,
+		Value:     []rune{},
+		Cursor:    0,
+	}
+}
+
+func (f *InputField) Update() {
+	cX, cY := ebiten.CursorPosition()
+	// Focus/unfocus logic
+	absX, absY := f.GetScreenPosition()
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		if cX >= absX && cX <= absX+f.Width && cY >= absY && cY <= absY+16 {
+			f.Focused = true
+		} else {
+			f.Focused = false
+			// Validate on blur
+			if f.Validator != nil {
+				f.ValidationError = f.Validator(string(f.Value))
+			}
+		}
+	}
+
+	if !f.Focused {
+		return
+	}
+
+	// Handle Enter key for submit
+	if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+		if f.OnSubmit != nil {
+			f.OnSubmit(string(f.Value))
+		}
+		return
+	}
+
+	// Handle text input
+	oldValue := string(f.Value)
+	for _, r := range ebiten.AppendInputChars(nil) {
+		if r == '\n' || r == '\r' {
+			continue
+		}
+		if len(f.Value) < f.MaxLength {
+			// Insert at cursor
+			before := f.Value[:f.Cursor]
+			after := f.Value[f.Cursor:]
+			f.Value = append(append(before, r), after...)
+			f.Cursor++
+		}
+	}
+
+	// Handle backspace/delete
+	if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) && f.Cursor > 0 {
+		before := f.Value[:f.Cursor-1]
+		after := f.Value[f.Cursor:]
+		f.Value = append(before, after...)
+		f.Cursor--
+	}
+	if inpututil.IsKeyJustPressed(ebiten.KeyDelete) && f.Cursor < len(f.Value) {
+		before := f.Value[:f.Cursor]
+		after := f.Value[f.Cursor+1:]
+		f.Value = append(before, after...)
+	}
+
+	// Handle Ctrl+A (select all)
+	if (ebiten.IsKeyPressed(ebiten.KeyControl) || ebiten.IsKeyPressed(ebiten.KeyMeta)) &&
+		inpututil.IsKeyJustPressed(ebiten.KeyA) {
+		f.selectionStart = 0
+		f.selectionEnd = len(f.Value)
+		f.Cursor = len(f.Value)
+	}
+
+	// Handle Ctrl+C (copy)
+	if (ebiten.IsKeyPressed(ebiten.KeyControl) || ebiten.IsKeyPressed(ebiten.KeyMeta)) &&
+		inpututil.IsKeyJustPressed(ebiten.KeyC) {
+		// Note: Actual clipboard copying would require platform-specific code
+		// This is a placeholder for the interface
+	}
+
+	// Handle Ctrl+V (paste)
+	if (ebiten.IsKeyPressed(ebiten.KeyControl) || ebiten.IsKeyPressed(ebiten.KeyMeta)) &&
+		inpututil.IsKeyJustPressed(ebiten.KeyV) {
+		// Note: Actual clipboard pasting would require platform-specific code
+		// This is a placeholder for the interface
+	}
+
+	// Handle Ctrl+X (cut)
+	if (ebiten.IsKeyPressed(ebiten.KeyControl) || ebiten.IsKeyPressed(ebiten.KeyMeta)) &&
+		inpututil.IsKeyJustPressed(ebiten.KeyX) {
+		// Note: Actual clipboard cutting would require platform-specific code
+		// This is a placeholder for the interface
+	}
+
+	if oldValue != string(f.Value) {
+		if f.OnChange != nil {
+			f.OnChange(string(f.Value))
+		}
+		// Clear validation error when value changes
+		f.ValidationError = nil
+	}
+
+	// Handle arrow keys
+	if inpututil.IsKeyJustPressed(ebiten.KeyLeft) && f.Cursor > 0 {
+		f.Cursor--
+	}
+	if inpututil.IsKeyJustPressed(ebiten.KeyRight) && f.Cursor < len(f.Value) {
+		f.Cursor++
+	}
+
+	// Handle Home/End keys
+	if inpututil.IsKeyJustPressed(ebiten.KeyHome) {
+		f.Cursor = 0
+	}
+	if inpututil.IsKeyJustPressed(ebiten.KeyEnd) {
+		f.Cursor = len(f.Value)
+	}
+
+	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+		f.Focused = false
+	}
+}
+
+func (f *InputField) Draw(screen *ebiten.Image, theme *theming.Theme) {
+	absX, absY := f.GetAbsolutePosition()
+
+	// Determine border color based on validation state
+	borderColor := theme.Colors.Border
+	if f.ValidationError != nil {
+		borderColor = theme.Colors.Error
+	} else if f.Focused {
+		borderColor = theme.Colors.Focus
+	}
+
+	// Stretch the input field sprite horizontally
+	f.Op.GeoM.Reset()
+	scaleX := float64(f.Width) / 48.0
+	f.Op.GeoM.Scale(scaleX, float64(f.Height)/16.0)
+	f.Op.GeoM.Translate(float64(absX), float64(absY))
+	screen.DrawImage(resource.GetSubImage("ui", theme.InputField.SrcX, theme.InputField.SrcY, theme.InputField.Width, theme.InputField.Height), f.Op)
+
+	// Draw focus/error border
+	if f.Focused || f.ValidationError != nil {
+		vector.StrokeRect(screen, float32(absX), float32(absY),
+			float32(f.Width), float32(f.Height), 2, borderColor, false)
+	}
+
+	// Draw text or placeholder
+	displayText := string(f.Value)
+	textColor := theme.Colors.Text
+
+	if len(f.Value) == 0 && f.Placeholder != "" && !f.Focused {
+		// Draw placeholder
+		displayText = f.Placeholder
+		textColor = theme.Colors.TextSecondary
+	} else if f.IsPassword && len(f.Value) > 0 {
+		// Draw bullets for password
+		displayText = ""
+		for range f.Value {
+			displayText += "●"
+		}
+	}
+
+	text.Draw(screen, displayText, 15, absX+5, absY+5, textColor)
+
+	// Draw cursor if focused
+	if f.Focused {
+		cursorX := absX + 5
+		if f.Cursor > 0 {
+			cursorText := string(f.Value[:f.Cursor])
+			if f.IsPassword {
+				cursorText = ""
+				for i := 0; i < f.Cursor; i++ {
+					cursorText += "●"
+				}
+			}
+			w, _ := text.Measure(cursorText, 16)
+			cursorX += int(w)
+		}
+		// Draw a simple vertical line as cursor
+		vector.DrawFilledRect(screen, float32(cursorX), float32(absY+4), 2, 12, textColor, false)
+	}
+
+	// Draw validation error message
+	if f.ValidationError != nil {
+		errorText := f.ValidationError.Error()
+		text.Draw(screen, errorText, 11, absX, absY+f.Height+2, theme.Colors.Error)
+	}
+}
+
+func (f *InputField) SetValue(val string) {
+	runes := []rune(val)
+	if len(runes) > f.MaxLength {
+		runes = runes[:f.MaxLength]
+	}
+	f.Value = runes
+	if f.Cursor > len(f.Value) {
+		f.Cursor = len(f.Value)
+	}
+}

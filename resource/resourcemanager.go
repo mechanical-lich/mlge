@@ -5,20 +5,19 @@ import (
 	"errors"
 	"fmt"
 	"image"
-	"io/ioutil"
 	"log"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/go-fonts/liberation/liberationsansregular"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/mechanical-lich/mlge/audio"
-	"github.com/mechanical-lich/mlge/config"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
 )
+
+const defaultFontDPI = 72.0
 
 var Textures map[string]*ebiten.Image
 var Fonts map[string]font.Face
@@ -29,7 +28,7 @@ var Sounds map[string]audio.AudioResource
 func LoadAssetsFromJSON(jsonPath string) error {
 	// Parse into a generic map to detect both named assets and folder lists.
 	raw := make(map[string]interface{})
-	data, err := ioutil.ReadFile(jsonPath)
+	data, err := os.ReadFile(jsonPath)
 	if err != nil {
 		return err
 	}
@@ -181,7 +180,12 @@ func LoadFont(name string, path string) error {
 		log.Print("Initialize fonts")
 		Fonts = make(map[string]font.Face)
 	}
-	raw := liberationsansregular.TTF
+
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("failed to read font file %s: %w", path, err)
+	}
+
 	tt, err := opentype.Parse(raw)
 	if err != nil {
 		return err
@@ -189,7 +193,7 @@ func LoadFont(name string, path string) error {
 
 	fontFace, err := opentype.NewFace(tt, &opentype.FaceOptions{
 		Size:    16,
-		DPI:     config.DPI,
+		DPI:     defaultFontDPI,
 		Hinting: font.HintingFull,
 	})
 	if err != nil {
