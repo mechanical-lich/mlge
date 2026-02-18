@@ -1,6 +1,6 @@
 package basecomponents
 
-import "github.com/mechanical-lich/mlge/ecs/v2"
+import "github.com/mechanical-lich/mlge/ecs"
 
 const Position3d ecs.ComponentType = "Position3dComponent"
 

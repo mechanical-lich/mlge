@@ -12,7 +12,7 @@ import (
 type ComponentAddFunction func(params []string) (Component, error)
 
 var blueprints = make(map[string][]string)
-var componentAddFunctions = make(map[string]ComponentAddFunction)
+var componentAddFunctions = make(map[ComponentType]ComponentAddFunction)
 
 // LoadBlueprintsFromFile - Loads the blueprints for the factory to construct entities
 func LoadBlueprintsFromFile(filename string) error {
@@ -52,7 +52,7 @@ func LoadFactoryFromStream(r io.Reader) error {
 
 // RegisterComponentAddFunction - Register a function pointer to point be used whenever the factory goes to build
 // an entity from a blueprint using this component.
-func RegisterComponentAddFunction(name string, function ComponentAddFunction) {
+func RegisterComponentAddFunction(name ComponentType, function ComponentAddFunction) {
 	componentAddFunctions[name] = function
 }
 
@@ -66,8 +66,8 @@ func Create(name string) (*Entity, error) {
 		for _, value := range blueprint {
 			c := strings.Split(value, ":")
 			params := strings.Split(c[1], ",")
-			if componentAddFunctions[c[0]] != nil {
-				newComp, err := componentAddFunctions[c[0]](params)
+			if componentAddFunctions[ComponentType(c[0])] != nil {
+				newComp, err := componentAddFunctions[ComponentType(c[0])](params)
 				if err != nil {
 					return nil, err
 				}
