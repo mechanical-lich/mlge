@@ -59,6 +59,7 @@ The `AStar` struct reuses memory across calls, reducing GC pressure in per-frame
 
 ## Example: Grid-Based Pathfinding
 
+{% raw %}
 ```go
 type Tile struct {
     X, Y     int
@@ -91,6 +92,7 @@ func (t *Tile) PathEstimatedCost(to path.Pather) float64 {
     return dx + dy // Manhattan distance
 }
 ```
+{% endraw %}
 
 ## Default Instance
 
