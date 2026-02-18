@@ -3,7 +3,6 @@ module github.com/mechanical-lich/mlge
 go 1.25.0
 
 require (
-	github.com/go-fonts/liberation v0.3.3
 	github.com/hajimehoshi/ebiten/v2 v2.8.8
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/image v0.30.0
