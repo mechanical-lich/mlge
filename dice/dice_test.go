@@ -25,13 +25,13 @@ func TestParseTokenRequestBasicMath(t *testing.T) {
 	output, err := ParseDiceRequest(input)
 	assert.Nil(t, err, "Shoudn't of errored")
 
-	assert.Equal(t, 3, output, "output should be 3")
+	assert.Equal(t, 3, output.Result, "output should be 3")
 
 	input = "1 - 2"
 	output, err = ParseDiceRequest(input)
 	assert.Nil(t, err, "Shoudn't of errored")
 
-	assert.Equal(t, -1, output, "output should be 1")
+	assert.Equal(t, -1, output.Result, "output should be -1")
 }
 
 func TestParseTokenRequestRandomRolls(t *testing.T) {
@@ -39,7 +39,7 @@ func TestParseTokenRequestRandomRolls(t *testing.T) {
 	output, err := ParseDiceRequest(input)
 	assert.Nil(t, err, "Shoudn't of errored")
 
-	assert.NotZero(t, output, "output shouldn't be 0")
+	assert.NotZero(t, output.Result, "output shouldn't be 0")
 
 	input = "1d6 - 2"
 	_, err = ParseDiceRequest(input)

@@ -19,6 +19,7 @@ MLGE is a Go library that provides a collection of game development systems buil
 - **Input Management** — Mouse and keyboard input translated into events
 - **Audio Playback** — Background music player supporting MP3 and OGG formats
 - **A\* Pathfinding** — Allocation-efficient pathfinding with reusable pathfinder instances
+- **World System** — Generic tile-based levels with custom data, pathfinding integration, and save/load
 - **UI Framework** — Comprehensive widget library with theming and sprite-based rendering
 - **Task Scheduling** — Priority-based task system with proximity assignment and escalation
 - **State Machine** — Stack-based game state management
@@ -45,6 +46,7 @@ MLGE is a Go library that provides a collection of game development systems buil
 | [`text`](text.md) | Text rendering and wrapping |
 | [`dice`](dice.md) | Dice expression parser |
 | [`message`](message.md) | In-game message log |
+| [`world`](world.md) | Generic tile-based world system with pathfinding and save/load |
 | [`utility`](utility.md) | Math, geometry, and drawing helpers |
 
 ## Installation
