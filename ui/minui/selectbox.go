@@ -170,7 +170,13 @@ func (sb *SelectBox) Layout() {
 			lbHeight = maxHeight
 		}
 		sb.listBox.SetSize(sb.bounds.Width, lbHeight)
-		sb.listBox.SetItems(sb.Items)
+
+		// Only call SetItems when the item list actually changed, because
+		// SetItems resets scrollOffset / SelectedIndex / HoveredIndex.
+		if !slicesEqual(sb.listBox.Items, sb.Items) {
+			sb.listBox.SetItems(sb.Items)
+		}
+
 		// Keep listbox selected index in sync
 		if sb.SelectedIndex >= 0 && sb.SelectedIndex < len(sb.Items) {
 			sb.listBox.SelectedIndex = sb.SelectedIndex
@@ -415,4 +421,17 @@ func (sb *SelectBox) IsMouseOverDropdown(mx, my int) bool {
 		Height: sb.listBox.bounds.Height,
 	}
 	return dropdownBounds.Contains(mx, my)
+}
+
+// slicesEqual returns true if two string slices have identical contents.
+func slicesEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
