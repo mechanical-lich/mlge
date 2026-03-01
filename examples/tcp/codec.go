@@ -54,12 +54,21 @@ func (c *BallCodec) Encode(tick uint64, entities []*ecs.Entity) *transport.Snaps
 
 // Decode applies a received Snapshot to the client's World.
 //
+// It reconciles the full entity set: entities absent from the snapshot are
+// removed from the world so the client does not accumulate stale entities
+// when the server destroys them.
+//
 // When called with a snapshot that came over TCP, component values are
 // map[string]interface{} (JSON default). The remarshal helper converts them
 // back to typed structs.
 func (c *BallCodec) Decode(snap *transport.Snapshot, world any) {
 	w := world.(*World)
+
+	// Build a set of IDs present in this snapshot.
+	seen := make(map[string]bool, len(snap.Entities))
+
 	for _, es := range snap.Entities {
+		seen[es.ID] = true
 		e := w.FindOrCreateEntity(es.ID)
 
 		if raw, ok := es.Components[TypePosition]; ok {
@@ -67,12 +76,14 @@ func (c *BallCodec) Decode(snap *transport.Snapshot, world any) {
 			if typed, ok := raw.(PositionComponent); ok {
 				// Local transport: value is already the correct type.
 				pos = typed
+			} else if m, ok := raw.(map[string]any); ok {
+				// TCP transport: JSON decoded to map - pull fields directly,
+				// no re-marshal needed for simple numeric types.
+				pos.X, _ = m["X"].(float64)
+				pos.Y, _ = m["Y"].(float64)
 			} else {
-				// TCP transport: value is map[string]interface{}, re-unmarshal.
-				if err := remarshal(raw, &pos); err != nil {
-					log.Printf("codec: decode position: %v", err)
-					continue
-				}
+				log.Printf("codec: unexpected position type %T", raw)
+				continue
 			}
 			e.AddComponent(pos)
 		}
@@ -103,6 +114,10 @@ func (c *BallCodec) Decode(snap *transport.Snapshot, world any) {
 			e.AddComponent(col)
 		}
 	}
+
+	// Remove entities that are no longer present in the snapshot.
+	// Without this, destroyed server entities accumulate in the client world.
+	w.RemoveAbsent(seen)
 }
 
 // remarshal is a helper that round-trips src through JSON into dst.

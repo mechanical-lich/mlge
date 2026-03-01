@@ -3,6 +3,7 @@ package transport
 import (
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -38,6 +39,10 @@ func writeMsg(conn net.Conn, env *tcpEnvelope) error {
 	return err
 }
 
+// maxMsgSize caps the largest message readMsg will allocate for.
+// Protects against a misbehaving peer sending a huge length header.
+const maxMsgSize = 4 << 20 // 4 MiB
+
 // readMsg reads a single length-prefixed JSON message from conn.
 func readMsg(conn net.Conn) (*tcpEnvelope, error) {
 	var header [4]byte
@@ -45,6 +50,9 @@ func readMsg(conn net.Conn) (*tcpEnvelope, error) {
 		return nil, err
 	}
 	size := binary.BigEndian.Uint32(header[:])
+	if size > maxMsgSize {
+		return nil, fmt.Errorf("transport/tcp: message size %d exceeds limit %d", size, maxMsgSize)
+	}
 	buf := make([]byte, size)
 	if _, err := io.ReadFull(conn, buf); err != nil {
 		return nil, err
@@ -139,7 +147,10 @@ func (t *TCPServerTransport) peerReadLoop(peer *tcpPeer) {
 		t.mu.Lock()
 		for i, c := range t.conns {
 			if c == peer {
-				t.conns = append(t.conns[:i], t.conns[i+1:]...)
+				last := len(t.conns) - 1
+				t.conns[i] = t.conns[last]
+				t.conns[last] = nil // clear trailing slot so GC can reclaim the peer
+				t.conns = t.conns[:last]
 				break
 			}
 		}

@@ -152,11 +152,23 @@ Returns a server/client pair backed by buffered Go channels. For single-player o
 func NewTCPServerTransport(addr string) (ServerTransport, error)
 ```
 
-Listens for incoming TCP connections on `addr` (e.g. `":7777"`). Accepts multiple clients. Each client gets a dedicated read goroutine. `Close` shuts down the listener and all connections.
+Listens for incoming TCP connections on `addr` (e.g. `":7777"`). Returns an error if the listener cannot bind (port in use, permission denied, etc.).
 
-`SendSnapshot` broadcasts to every connected client. Clients that fail a write are logged; other clients are unaffected.
+### Multi-client broadcasting
 
-`TCP_NODELAY` is set on every accepted connection to reduce latency.
+`SendSnapshot` serializes the snapshot once and writes it to every connected peer. Each peer has its own send mutex so slow clients do not block others. A failed write to one peer is logged and that peer is removed; every other client continues unaffected.
+
+### Peer lifecycle
+
+- A background goroutine is started for each accepted connection to read incoming commands.
+- When a peer disconnects (EOF or read error) its goroutine exits and the peer is removed from the broadcast list using a swap-and-nil pattern so the removed slot is eligible for garbage collection immediately.
+- `Close` shuts down the TCP listener (stopping new accepts), closes every active peer connection, and waits for all peer goroutines to exit before returning.
+
+`TCP_NODELAY` is set on every accepted connection to minimise command latency.
+
+### Concurrency
+
+`ReceiveCommands` drains a buffered channel (capacity 64). Commands from all connected clients are merged into this single channel. Calls from the simulation goroutine are safe without external locking.
 
 ## TCPClientTransport
 
@@ -164,13 +176,15 @@ Listens for incoming TCP connections on `addr` (e.g. `":7777"`). Accepts multipl
 func NewTCPClientTransport(addr string) (ClientTransport, error)
 ```
 
-Dials `addr` (e.g. `"localhost:7777"`) and starts a background read goroutine. `ReceiveSnapshot` returns the most recently received snapshot and clears it, so the caller always sees up-to-date state.
+Dials `addr` synchronously and starts a background read goroutine. Returns an error if the connection cannot be established. There is no built-in reconnection; if the server drops the connection a new `TCPClientTransport` must be created.
+
+`ReceiveSnapshot` returns the most recently received snapshot under a mutex and clears it, so the caller always gets the latest state without buffering stale frames.
 
 `TCP_NODELAY` is set on the connection.
 
 ## TCP Wire Format
 
-All messages use a simple framing protocol:
+All messages use a simple length-prefix framing protocol:
 
 ```
 [ 4-byte big-endian uint32 length ][ JSON bytes ]
@@ -182,7 +196,42 @@ The JSON body is an envelope:
 {"k": "cmd"|"snap", "p": <payload>}
 ```
 
-Commands and snapshots are marshaled with `encoding/json`. This means `Command.Payload` and `EntitySnapshot.Components` values stored as bare `any`/`interface{}` will decode on the remote side as `map[string]interface{}`. Your game code must re-unmarshal those into concrete types, or store `json.RawMessage` directly in those fields.
+| `k` value | Direction | `p` payload |
+|-----------|-----------|-------------|
+| `"cmd"` | client → server | `transport.Command` |
+| `"snap"` | server → client | `transport.Snapshot` |
+
+**Maximum message size:** 4 MiB. A peer sending a length header larger than this causes the connection to be closed with an error. This prevents a misbehaving client from forcing unbounded allocation on the server.
+
+### JSON decode and the any/interface{} problem
+
+`encoding/json` decodes JSON objects into `map[string]interface{}` when the target field is typed `any`. This affects two fields that games commonly use:
+
+| Field | Type | Round-trip behaviour |
+|-------|------|---------------------|
+| `Command.Payload` | `any` | Concrete type on sender; `map[string]interface{}` on receiver |
+| `EntitySnapshot.Components` values | `any` | Same |
+
+**Recommended pattern — re-unmarshal in the codec:**
+
+```go
+func (c *MyCodec) Decode(snap *transport.Snapshot, world any) {
+    for _, es := range snap.Entities {
+        raw := es.Components[TypePosition] // map[string]interface{} over TCP
+        var pos PositionComponent
+        if m, ok := raw.(map[string]interface{}); ok {
+            // Extract fields manually or re-marshal to JSON and unmarshal again.
+            pos.X, _ = m["X"].(float64)
+            pos.Y, _ = m["Y"].(float64)
+        } else {
+            pos = raw.(PositionComponent) // typed (LocalTransport path)
+        }
+        entity.AddComponent(pos)
+    }
+}
+```
+
+The `examples/tcp/codec.go` demonstrates direct map-field extraction as the lower-allocation approach. See `examples/tcp/` for a complete runnable example (both local and TCP paths in one binary, switched with `--mode server|client`).
 
 ## Usage
 
@@ -203,13 +252,29 @@ if err != nil {
     log.Fatal(err)
 }
 defer srvT.Close()
-server.Run(srvT)
+server.Run(srvT) // blocks until done
 
-// Client process
+// Client process (separate binary / separate machine)
 cliT, err := transport.NewTCPClientTransport("192.168.1.10:7777")
 if err != nil {
     log.Fatal(err)
 }
 defer cliT.Close()
 ebiten.RunGame(client.New(cliT))
+```
+
+**Swapping transports without changing game code:**
+
+Because both `LocalTransport` and the TCP pair implement the same `ServerTransport` / `ClientTransport` interfaces, game code does not need to know which is in use. A typical pattern:
+
+```go
+var srvT transport.ServerTransport
+var cliT transport.ClientTransport
+
+if *network {
+    srvT, _ = transport.NewTCPServerTransport(*addr)
+    cliT, _ = transport.NewTCPClientTransport(*addr)
+} else {
+    srvT, cliT = transport.NewLocalTransport()
+}
 ```
