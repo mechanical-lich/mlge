@@ -14,20 +14,21 @@ MLGE is a Go library that provides a collection of game development systems buil
 
 ## Key Features
 
-- **Entity Component System** — Blueprint-based ECS with component factory and system manager
-- **Event System** — Publish/subscribe with immediate and queued dispatch modes
-- **Input Management** — Mouse and keyboard input translated into events
-- **Audio Playback** — Background music player supporting MP3 and OGG formats
-- **A\* Pathfinding** — Allocation-efficient pathfinding with reusable pathfinder instances
-- **World System** — Generic tile-based levels with custom data, pathfinding integration, and save/load
-- **UI Framework** — Comprehensive widget library with theming and sprite-based rendering
-- **Task Scheduling** — Priority-based task system with proximity assignment and escalation
-- **State Machine** — Stack-based game state management
-- **Sensory Simulation** — Grid-based stimulus propagation for sound, scent, and pheromones
-- **Resource Management** — Asset loading and caching for textures, fonts, and sounds
-- **Text Rendering** — Text drawing, measurement, and word wrapping
-- **Dice Rolling** — Tabletop-style dice expression parser
-- **Utility Functions** — Math, geometry, and drawing helpers
+- **Entity Component System** -- Blueprint-based ECS with component factory and system manager
+- **Event System** -- Publish/subscribe with immediate and queued dispatch modes
+- **Input Management** -- Mouse and keyboard input translated into events
+- **Audio Playback** -- Background music player supporting MP3 and OGG formats
+- **A\* Pathfinding** -- Allocation-efficient pathfinding with reusable pathfinder instances
+- **World System** -- Generic tile-based levels with custom data, pathfinding integration, and save/load
+- **UI Framework** -- Comprehensive widget library with theming and sprite-based rendering
+- **Task Scheduling** -- Priority-based task system with proximity assignment and escalation
+- **State Machine** -- Stack-based game state management
+- **Sensory Simulation** -- Grid-based stimulus propagation for sound, scent, and pheromones
+- **Resource Management** -- Asset loading and caching for textures, fonts, and sounds
+- **Text Rendering** -- Text drawing, measurement, and word wrapping
+- **Dice Rolling** -- Tabletop-style dice expression parser
+- **Utility Functions** -- Math, geometry, and drawing helpers
+- **Client/Server Architecture** -- Quake-style simulation/render split with transport abstraction
 
 ## Packages
 
@@ -48,6 +49,9 @@ MLGE is a Go library that provides a collection of game development systems buil
 | [`message`](message.md) | In-game message log |
 | [`world`](world.md) | Generic tile-based world system with pathfinding and save/load |
 | [`utility`](utility.md) | Math, geometry, and drawing helpers |
+| [`transport`](transport.md) | Client/server transport abstraction (commands and snapshots) |
+| [`simulation`](simulation.md) | Server-side authoritative game loop at fixed tick rate |
+| [`client`](client.md) | Client-side presentation layer (Ebitengine integration) |
 
 ## Installation
 

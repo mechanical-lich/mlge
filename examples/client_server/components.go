@@ -1,0 +1,66 @@
+package main
+
+import (
+	"fmt"
+	"image/color"
+
+	"github.com/mechanical-lich/mlge/ecs"
+)
+
+// ---- Component types --------------------------------------------------------
+
+const (
+	TypeID       ecs.ComponentType = "ID"
+	TypePosition ecs.ComponentType = "Position"
+	TypeVelocity ecs.ComponentType = "Velocity"
+	TypeColor    ecs.ComponentType = "Color"
+)
+
+// IDComponent assigns a stable string identity to an entity so the snapshot
+// codec can correlate server entities with client-side counterparts.
+type IDComponent struct{ ID string }
+
+func (c IDComponent) GetType() ecs.ComponentType { return TypeID }
+
+// PositionComponent stores the entity's world-space position.
+// Both server and client carry this component; the server is authoritative.
+type PositionComponent struct{ X, Y float64 }
+
+func (c PositionComponent) GetType() ecs.ComponentType { return TypePosition }
+
+// VelocityComponent stores the entity's velocity in pixels per second.
+// Only the server uses this; it is never included in snapshots.
+type VelocityComponent struct{ VX, VY float64 }
+
+func (c VelocityComponent) GetType() ecs.ComponentType { return TypeVelocity }
+
+// ColorComponent stores the entity's render color.
+// Set on the server at creation; included in snapshots so the client knows
+// each ball's color.
+type ColorComponent struct{ RGBA color.RGBA }
+
+func (c ColorComponent) GetType() ecs.ComponentType { return TypeColor }
+
+// ---- Helpers -----------------------------------------------------------------
+
+func ballID(i int) string { return fmt.Sprintf("ball-%d", i) }
+
+// ballColor returns a distinct color for each ball index.
+var palette = []color.RGBA{
+	{220, 60, 60, 255},   // red
+	{60, 180, 60, 255},   // green
+	{60, 120, 220, 255},  // blue
+	{220, 180, 40, 255},  // yellow
+	{180, 60, 220, 255},  // purple
+	{40, 200, 200, 255},  // cyan
+	{220, 120, 40, 255},  // orange
+	{200, 200, 200, 255}, // white
+	{220, 80, 140, 255},  // pink
+	{80, 160, 80, 255},   // dark green
+	{80, 140, 220, 255},  // sky blue
+	{220, 160, 80, 255},  // gold
+}
+
+func ballColor(i int) color.RGBA {
+	return palette[i%len(palette)]
+}
