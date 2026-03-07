@@ -15,7 +15,7 @@ A classic Entity Component System with blueprint-based entity creation, componen
 - **Entity** — A container that holds a map of components
 - **Component** — A data struct implementing the `Component` interface
 - **System** — Logic that operates on entities with specific component requirements
-- **Blueprint** — A JSON definition for creating entities with pre-configured components
+- **Blueprint** — A text-based definition for creating entities with pre-configured components
 
 ## Types
 
@@ -86,11 +86,13 @@ type SystemManager struct{}
 
 ## Blueprints
 
-Blueprints allow you to define entity templates in JSON and create entities from them at runtime.
+Blueprints allow you to define entity templates and create entities from them at runtime.
 
-### Registering Component Factories
+### Text-Based Factory (Legacy)
 
-Before loading blueprints, register factory functions that know how to create each component type:
+The original factory uses a line-based text format with string parameters.
+
+#### Registering Component Factories
 
 ```go
 type ComponentAddFunction func([]string) (Component, error)
@@ -102,35 +104,28 @@ ecs.RegisterComponentAddFunction("position2d", func(args []string) (ecs.Componen
 })
 ```
 
-### Blueprint JSON Format
+#### Blueprint Text Format
 
-```json
-{
-    "blueprints": {
-        "player": {
-            "components": {
-                "position2d": ["100", "200"],
-                "health": ["100"],
-                "sprite": ["player_idle"]
-            }
-        },
-        "enemy": {
-            "components": {
-                "position2d": ["0", "0"],
-                "health": ["50"],
-                "sprite": ["enemy_idle"],
-                "ai": []
-            }
-        }
-    }
-}
+Each entity starts with its name on a new line, followed by component definitions in the format `componentType:param1,param2,...`. Entities are separated by blank lines.
+
+```text
+player
+position2d:100,200
+health:100
+sprite:player_idle
+
+enemy
+position2d:0,0
+health:50
+sprite:enemy_idle
+ai:
 ```
 
-### Loading and Creating
+#### Loading and Creating
 
 ```go
 // Load blueprints from file
-err := ecs.LoadBlueprintsFromFile("data/blueprints.json")
+err := ecs.LoadBlueprintsFromFile("data/blueprints.txt")
 
 // Or from an io.Reader
 err := ecs.LoadFactoryFromStream(reader)
@@ -138,6 +133,82 @@ err := ecs.LoadFactoryFromStream(reader)
 // Create an entity from a blueprint
 entity, err := ecs.Create("player")
 ```
+
+### JSON Factory (Recommended)
+
+The `JSONFactory` uses JSON blueprints and populates components via JSON unmarshalling, making it more flexible for complex component data.
+
+#### Creating a Factory
+
+```go
+factory := ecs.NewJSONFactory()
+```
+
+#### Registering Components
+
+Register component constructors that return zero-value component pointers:
+
+```go
+factory.RegisterComponent("HealthComponent", func() ecs.Component {
+    return &components.HealthComponent{}
+})
+factory.RegisterComponent("AppearanceComponent", func() ecs.Component {
+    return &components.AppearanceComponent{}
+})
+```
+
+#### Blueprint JSON Format
+
+Each JSON file contains a map of blueprint names to component definitions:
+
+```json
+{
+    "player": {
+        "HealthComponent": {"MaxHealth": 100, "Health": 100},
+        "AppearanceComponent": {"SpriteName": "player_idle"}
+    },
+    "enemy": {
+        "HealthComponent": {"MaxHealth": 50},
+        "AppearanceComponent": {"SpriteName": "enemy_idle"},
+        "HostileAIComponent": {}
+    }
+}
+```
+
+#### Loading Blueprints
+
+```go
+// Load from a single file
+err := factory.LoadBlueprintsFromFile("data/units.json")
+
+// Load all JSON files from a directory
+err := factory.LoadBlueprintsFromDir("data/blueprints")
+```
+
+#### Creating Entities
+
+```go
+// Create an entity from a blueprint
+entity, err := factory.Create("player")
+
+// Create with a callback for custom initialization
+entity, err := factory.CreateWithCallback("player", func(comp ecs.Component) error {
+    // Auto-initialize health if not set
+    if hc, ok := comp.(*HealthComponent); ok {
+        if hc.Health == 0 {
+            hc.Health = hc.MaxHealth
+        }
+    }
+    return nil
+})
+```
+
+#### Additional Methods
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `BlueprintExists` | `(name string) bool` | Check if a blueprint is registered |
+| `GetBlueprintNames` | `() []string` | Get all registered blueprint names |
 
 ## Built-in Components
 

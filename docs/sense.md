@@ -34,8 +34,8 @@ A grid-based sensory simulation supporting sound, pheromone, and scent stimuli w
 ```go
 type Stimulus struct {
     Type      StimulusType
-    Intensity float32
-    Decay     float32
+    Intensity int
+    Decay     int
     ID        string
 }
 ```
@@ -73,7 +73,7 @@ scape.MakeSound(50, 50, "explosion", 100)
 scape.ApplyStimulus(30, 30, sense.Stimulus{
     Type:      sense.PheremoneStimuli,
     Intensity: 50,
-    Decay:     0.1,
+    Decay:     1,
     ID:        "trail",
 })
 

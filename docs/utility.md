@@ -19,7 +19,7 @@ import "github.com/mechanical-lich/mlge/utility"
 | Function | Signature | Description |
 |----------|-----------|-------------|
 | `GetRandom` | `(low, high int) int` | Random integer in range [low, high] |
-| `Distance` | `(x1, y1, x2, y2 int) float64` | Euclidean distance between two points |
+| `Distance` | `(x1, y1, x2, y2 int) int` | Approximate distance between two points |
 | `Sgn` | `(a int) int` | Sign of an integer (-1, 0, or 1) |
 | `Clamp` | `(value, min, max int) int` | Clamp value to range |
 | `Wrap` | `(value, max int) int` | Wrap value around range [0, max) |

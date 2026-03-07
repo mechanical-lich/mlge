@@ -30,24 +30,22 @@ err := resource.LoadAssetsFromJSON("data/assets.json")
 
 ### JSON Format
 
+The JSON file is a map where keys are asset names and values are file paths:
+
 ```json
 {
-    "textures": [
-        { "name": "player", "path": "assets/player.png" }
-    ],
-    "texture_folders": [
-        { "path": "assets/sprites" }
-    ],
-    "fonts": [
-        { "name": "main", "path": "assets/fonts/main.ttf" }
-    ],
-    "sounds": [
-        { "name": "bgm", "path": "assets/audio/bgm.ogg", "type": "ogg" }
-    ]
+    "player": "assets/player.png",
+    "tileset": "assets/tiles.png",
+    "main": "assets/fonts/main.ttf",
+    "folders": ["assets/sprites", "assets/characters"]
 }
 ```
 
-When loading from `texture_folders`, each image file is registered with its filename (without extension) as the key.
+- **Images** (`.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`): Loaded as textures with the key as the name
+- **Fonts** (`.ttf`): Loaded as fonts with the key as the name
+- **Folders**: The special `folders` key accepts an array of directory paths to recursively load
+
+When loading from folders, asset names are generated from the relative path with directory separators replaced by underscores and without the file extension. For example, `sprites/player/idle.png` becomes `player_idle`.
 
 ## Loading Individual Assets
 

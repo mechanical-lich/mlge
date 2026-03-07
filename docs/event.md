@@ -54,9 +54,9 @@ em := event.GetInstance()
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `RegisterListener` | `(eventType EventType, listener EventListener)` | Subscribe to an event type |
+| `RegisterListener` | `(listener EventListener, eventType EventType)` | Subscribe to an event type |
 | `SendEvent` | `(event EventData) error` | Dispatch immediately to all listeners |
-| `UnregisterListener` | `(eventType EventType, listener EventListener)` | Unsubscribe from a specific event type |
+| `UnregisterListener` | `(listener EventListener, eventType EventType)` | Unsubscribe from a specific event type |
 | `UnregisterListenerFromAll` | `(listener EventListener)` | Unsubscribe from all event types |
 
 ### QueuedEventManager
