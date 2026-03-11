@@ -107,7 +107,7 @@ func (f *JSONFactory) Create(name string) (*Entity, error) {
 	entity.Blueprint = name
 
 	for compName, params := range blueprint {
-		comp, err := f.createComponent(compName, params)
+		comp, err := f.CreateComponent(compName, params)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create component %s for %s: %w", compName, name, err)
 		}
@@ -129,7 +129,7 @@ func (f *JSONFactory) CreateWithCallback(name string, callback func(comp Compone
 	entity.Blueprint = name
 
 	for compName, params := range blueprint {
-		comp, err := f.createComponent(compName, params)
+		comp, err := f.CreateComponent(compName, params)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create component %s for %s: %w", compName, name, err)
 		}
@@ -144,8 +144,8 @@ func (f *JSONFactory) CreateWithCallback(name string, callback func(comp Compone
 	return entity, nil
 }
 
-// createComponent creates a component instance from registry and populates it with JSON data.
-func (f *JSONFactory) createComponent(name string, data map[string]interface{}) (Component, error) {
+// CreateComponent creates a component instance from registry and populates it with JSON data.
+func (f *JSONFactory) CreateComponent(name string, data map[string]interface{}) (Component, error) {
 	constructor, ok := f.registry[name]
 	if !ok {
 		return nil, fmt.Errorf("component %s not registered", name)
