@@ -9,6 +9,32 @@ import (
 	"github.com/mechanical-lich/mlge/resource"
 )
 
+// Reusable buffers for rounded-rect drawing to avoid per-frame allocations.
+var (
+	rrVertices []ebiten.Vertex
+	rrIndices  []uint16
+	rrOp       = &ebiten.DrawTrianglesOptions{AntiAlias: true, FillRule: ebiten.NonZero}
+	rrWhiteImg *ebiten.Image // lazily initialised 1×1 white pixel
+
+	// Stroke-specific reusable buffers
+	rrStrokeVertices []ebiten.Vertex
+	rrStrokeIndices  []uint16
+	rrStrokeOp       = &ebiten.DrawTrianglesOptions{AntiAlias: true}
+	rrStrokeOptions  = &vector.StrokeOptions{LineJoin: vector.LineJoinRound, LineCap: vector.LineCapRound}
+
+	// Reusable DrawImageOptions for sprite/9-slice rendering
+	spriteOp ebiten.DrawImageOptions
+)
+
+// getWhitePixel returns a cached 1×1 white ebiten.Image.
+func getWhitePixel() *ebiten.Image {
+	if rrWhiteImg == nil {
+		rrWhiteImg = ebiten.NewImage(1, 1)
+		rrWhiteImg.Fill(color.White)
+	}
+	return rrWhiteImg
+}
+
 // colorToRGBA converts a color.Color to color.RGBA
 func colorToRGBA(c color.Color) color.RGBA {
 	r, g, b, a := c.RGBA()
@@ -33,13 +59,14 @@ func DrawSprite(screen *ebiten.Image, spriteSheet string, coords *SpriteCoords, 
 		return
 	}
 
-	op := &ebiten.DrawImageOptions{}
+	spriteOp.GeoM.Reset()
+	spriteOp.ColorScale.Reset()
 	scaleX := float64(bounds.Width) / float64(coords.Width)
 	scaleY := float64(bounds.Height) / float64(coords.Height)
-	op.GeoM.Scale(scaleX, scaleY)
-	op.GeoM.Translate(float64(bounds.X), float64(bounds.Y))
+	spriteOp.GeoM.Scale(scaleX, scaleY)
+	spriteOp.GeoM.Translate(float64(bounds.X), float64(bounds.Y))
 
-	screen.DrawImage(img, op)
+	screen.DrawImage(img, &spriteOp)
 }
 
 // DrawSpriteWithOpacity draws a sprite with opacity
@@ -53,14 +80,15 @@ func DrawSpriteWithOpacity(screen *ebiten.Image, spriteSheet string, coords *Spr
 		return
 	}
 
-	op := &ebiten.DrawImageOptions{}
+	spriteOp.GeoM.Reset()
+	spriteOp.ColorScale.Reset()
 	scaleX := float64(bounds.Width) / float64(coords.Width)
 	scaleY := float64(bounds.Height) / float64(coords.Height)
-	op.GeoM.Scale(scaleX, scaleY)
-	op.GeoM.Translate(float64(bounds.X), float64(bounds.Y))
-	op.ColorScale.ScaleAlpha(opacity)
+	spriteOp.GeoM.Scale(scaleX, scaleY)
+	spriteOp.GeoM.Translate(float64(bounds.X), float64(bounds.Y))
+	spriteOp.ColorScale.ScaleAlpha(opacity)
 
-	screen.DrawImage(img, op)
+	screen.DrawImage(img, &spriteOp)
 }
 
 // Draw9Slice draws a 9-slice scaled sprite to fill the bounds
@@ -80,59 +108,60 @@ func Draw9Slice(screen *ebiten.Image, spriteSheet string, coords *NineSliceCoord
 	scaledTile := tileSize * tileScale
 
 	// Draw corners
-	op := ebiten.DrawImageOptions{}
-	op.GeoM.Scale(float64(tileScale), float64(tileScale))
-	op.GeoM.Translate(float64(x), float64(y))
-	screen.DrawImage(resource.GetSubImage(spriteSheet, srcX, srcY, tileSize, tileSize), &op)
+	spriteOp.GeoM.Reset()
+	spriteOp.ColorScale.Reset()
+	spriteOp.GeoM.Scale(float64(tileScale), float64(tileScale))
+	spriteOp.GeoM.Translate(float64(x), float64(y))
+	screen.DrawImage(resource.GetSubImage(spriteSheet, srcX, srcY, tileSize, tileSize), &spriteOp)
 
-	op = ebiten.DrawImageOptions{}
-	op.GeoM.Scale(float64(tileScale), float64(tileScale))
-	op.GeoM.Translate(float64(x+w-scaledTile), float64(y))
-	screen.DrawImage(resource.GetSubImage(spriteSheet, srcX+2*tileSize, srcY, tileSize, tileSize), &op)
+	spriteOp.GeoM.Reset()
+	spriteOp.GeoM.Scale(float64(tileScale), float64(tileScale))
+	spriteOp.GeoM.Translate(float64(x+w-scaledTile), float64(y))
+	screen.DrawImage(resource.GetSubImage(spriteSheet, srcX+2*tileSize, srcY, tileSize, tileSize), &spriteOp)
 
-	op = ebiten.DrawImageOptions{}
-	op.GeoM.Scale(float64(tileScale), float64(tileScale))
-	op.GeoM.Translate(float64(x), float64(y+h-scaledTile))
-	screen.DrawImage(resource.GetSubImage(spriteSheet, srcX, srcY+2*tileSize, tileSize, tileSize), &op)
+	spriteOp.GeoM.Reset()
+	spriteOp.GeoM.Scale(float64(tileScale), float64(tileScale))
+	spriteOp.GeoM.Translate(float64(x), float64(y+h-scaledTile))
+	screen.DrawImage(resource.GetSubImage(spriteSheet, srcX, srcY+2*tileSize, tileSize, tileSize), &spriteOp)
 
-	op = ebiten.DrawImageOptions{}
-	op.GeoM.Scale(float64(tileScale), float64(tileScale))
-	op.GeoM.Translate(float64(x+w-scaledTile), float64(y+h-scaledTile))
-	screen.DrawImage(resource.GetSubImage(spriteSheet, srcX+2*tileSize, srcY+2*tileSize, tileSize, tileSize), &op)
+	spriteOp.GeoM.Reset()
+	spriteOp.GeoM.Scale(float64(tileScale), float64(tileScale))
+	spriteOp.GeoM.Translate(float64(x+w-scaledTile), float64(y+h-scaledTile))
+	screen.DrawImage(resource.GetSubImage(spriteSheet, srcX+2*tileSize, srcY+2*tileSize, tileSize, tileSize), &spriteOp)
 
 	// Draw edges - Top and bottom
 	for dx := scaledTile; dx < w-scaledTile; dx += scaledTile {
-		op = ebiten.DrawImageOptions{}
-		op.GeoM.Scale(float64(tileScale), float64(tileScale))
-		op.GeoM.Translate(float64(x+dx), float64(y))
-		screen.DrawImage(resource.GetSubImage(spriteSheet, srcX+tileSize, srcY, tileSize, tileSize), &op)
+		spriteOp.GeoM.Reset()
+		spriteOp.GeoM.Scale(float64(tileScale), float64(tileScale))
+		spriteOp.GeoM.Translate(float64(x+dx), float64(y))
+		screen.DrawImage(resource.GetSubImage(spriteSheet, srcX+tileSize, srcY, tileSize, tileSize), &spriteOp)
 
-		op = ebiten.DrawImageOptions{}
-		op.GeoM.Scale(float64(tileScale), float64(tileScale))
-		op.GeoM.Translate(float64(x+dx), float64(y+h-scaledTile))
-		screen.DrawImage(resource.GetSubImage(spriteSheet, srcX+tileSize, srcY+2*tileSize, tileSize, tileSize), &op)
+		spriteOp.GeoM.Reset()
+		spriteOp.GeoM.Scale(float64(tileScale), float64(tileScale))
+		spriteOp.GeoM.Translate(float64(x+dx), float64(y+h-scaledTile))
+		screen.DrawImage(resource.GetSubImage(spriteSheet, srcX+tileSize, srcY+2*tileSize, tileSize, tileSize), &spriteOp)
 	}
 
 	// Left and right
 	for dy := scaledTile; dy < h-scaledTile; dy += scaledTile {
-		op = ebiten.DrawImageOptions{}
-		op.GeoM.Scale(float64(tileScale), float64(tileScale))
-		op.GeoM.Translate(float64(x), float64(y+dy))
-		screen.DrawImage(resource.GetSubImage(spriteSheet, srcX, srcY+tileSize, tileSize, tileSize), &op)
+		spriteOp.GeoM.Reset()
+		spriteOp.GeoM.Scale(float64(tileScale), float64(tileScale))
+		spriteOp.GeoM.Translate(float64(x), float64(y+dy))
+		screen.DrawImage(resource.GetSubImage(spriteSheet, srcX, srcY+tileSize, tileSize, tileSize), &spriteOp)
 
-		op = ebiten.DrawImageOptions{}
-		op.GeoM.Scale(float64(tileScale), float64(tileScale))
-		op.GeoM.Translate(float64(x+w-scaledTile), float64(y+dy))
-		screen.DrawImage(resource.GetSubImage(spriteSheet, srcX+2*tileSize, srcY+tileSize, tileSize, tileSize), &op)
+		spriteOp.GeoM.Reset()
+		spriteOp.GeoM.Scale(float64(tileScale), float64(tileScale))
+		spriteOp.GeoM.Translate(float64(x+w-scaledTile), float64(y+dy))
+		screen.DrawImage(resource.GetSubImage(spriteSheet, srcX+2*tileSize, srcY+tileSize, tileSize, tileSize), &spriteOp)
 	}
 
 	// Center
 	for dx := scaledTile; dx < w-scaledTile; dx += scaledTile {
 		for dy := scaledTile; dy < h-scaledTile; dy += scaledTile {
-			op = ebiten.DrawImageOptions{}
-			op.GeoM.Scale(float64(tileScale), float64(tileScale))
-			op.GeoM.Translate(float64(x+dx), float64(y+dy))
-			screen.DrawImage(resource.GetSubImage(spriteSheet, srcX+tileSize, srcY+tileSize, tileSize, tileSize), &op)
+			spriteOp.GeoM.Reset()
+			spriteOp.GeoM.Scale(float64(tileScale), float64(tileScale))
+			spriteOp.GeoM.Translate(float64(x+dx), float64(y+dy))
+			screen.DrawImage(resource.GetSubImage(spriteSheet, srcX+tileSize, srcY+tileSize, tileSize, tileSize), &spriteOp)
 		}
 	}
 }
@@ -171,22 +200,23 @@ func DrawBackground(screen *ebiten.Image, bounds Rect, style *Style) {
 		img, ok := resource.Textures[*style.BackgroundImage]
 		if ok && img != nil {
 			// Draw tiled or stretched background
-			op := &ebiten.DrawImageOptions{}
+			spriteOp.GeoM.Reset()
+			spriteOp.ColorScale.Reset()
 
 			// Scale to fit bounds
 			imgBounds := img.Bounds()
 			scaleX := float64(bounds.Width) / float64(imgBounds.Dx())
 			scaleY := float64(bounds.Height) / float64(imgBounds.Dy())
 
-			op.GeoM.Scale(scaleX, scaleY)
-			op.GeoM.Translate(float64(bounds.X), float64(bounds.Y))
+			spriteOp.GeoM.Scale(scaleX, scaleY)
+			spriteOp.GeoM.Translate(float64(bounds.X), float64(bounds.Y))
 
 			// Apply opacity
 			if style.Opacity != nil {
-				op.ColorScale.ScaleAlpha(float32(*style.Opacity))
+				spriteOp.ColorScale.ScaleAlpha(float32(*style.Opacity))
 			}
 
-			screen.DrawImage(img, op)
+			screen.DrawImage(img, &spriteOp)
 			return
 		}
 	}
@@ -288,16 +318,17 @@ func DrawBackgroundWithTheme(screen *ebiten.Image, bounds Rect, style *Style, th
 	if style != nil && style.BackgroundImage != nil && *style.BackgroundImage != "" {
 		img, ok := resource.Textures[*style.BackgroundImage]
 		if ok && img != nil {
-			op := &ebiten.DrawImageOptions{}
+			spriteOp.GeoM.Reset()
+			spriteOp.ColorScale.Reset()
 			imgBounds := img.Bounds()
 			scaleX := float64(bounds.Width) / float64(imgBounds.Dx())
 			scaleY := float64(bounds.Height) / float64(imgBounds.Dy())
-			op.GeoM.Scale(scaleX, scaleY)
-			op.GeoM.Translate(float64(bounds.X), float64(bounds.Y))
+			spriteOp.GeoM.Scale(scaleX, scaleY)
+			spriteOp.GeoM.Translate(float64(bounds.X), float64(bounds.Y))
 			if style.Opacity != nil {
-				op.ColorScale.ScaleAlpha(float32(*style.Opacity))
+				spriteOp.ColorScale.ScaleAlpha(float32(*style.Opacity))
 			}
-			screen.DrawImage(img, op)
+			screen.DrawImage(img, &spriteOp)
 			return
 		}
 	}
@@ -413,49 +444,40 @@ func DrawRoundedRect(screen *ebiten.Image, bounds Rect, radius int, clr color.Co
 	h := float32(bounds.Height)
 	r := float32(radius)
 
-	// Create a path for rounded rectangle
 	var path vector.Path
-
-	// Top-left corner
 	path.MoveTo(x+r, y)
-
-	// Top edge and top-right corner
 	path.LineTo(x+w-r, y)
 	path.ArcTo(x+w, y, x+w, y+r, r)
-
-	// Right edge and bottom-right corner
 	path.LineTo(x+w, y+h-r)
 	path.ArcTo(x+w, y+h, x+w-r, y+h, r)
-
-	// Bottom edge and bottom-left corner
 	path.LineTo(x+r, y+h)
 	path.ArcTo(x, y+h, x, y+h-r, r)
-
-	// Left edge and back to start
 	path.LineTo(x, y+r)
 	path.ArcTo(x, y, x+r, y, r)
-
 	path.Close()
 
-	vertices, indices := path.AppendVerticesAndIndicesForFilling(nil, nil)
+	// Reuse backing arrays
+	rrVertices = rrVertices[:0]
+	rrIndices = rrIndices[:0]
+	rrVertices, rrIndices = path.AppendVerticesAndIndicesForFilling(rrVertices, rrIndices)
 
-	// Apply color to vertices
-	for i := range vertices {
-		vertices[i].ColorR = 1
-		vertices[i].ColorG = 1
-		vertices[i].ColorB = 1
-		vertices[i].ColorA = 1
+	// Tint vertices with the fill color (white pixel × vertex color = desired color)
+	cr, cg, cb, ca := clr.RGBA()
+	rf := float32(cr) / 0xffff
+	gf := float32(cg) / 0xffff
+	bf := float32(cb) / 0xffff
+	af := float32(ca) / 0xffff
+	for i := range rrVertices {
+		rrVertices[i].ColorR = rf
+		rrVertices[i].ColorG = gf
+		rrVertices[i].ColorB = bf
+		rrVertices[i].ColorA = af
 	}
 
-	op := &ebiten.DrawTrianglesOptions{}
-	op.AntiAlias = true
-	op.FillRule = ebiten.NonZero
-
-	// Create a 1x1 white image for coloring
-	whiteImg := ebiten.NewImage(1, 1)
-	whiteImg.Fill(clr)
-
-	screen.DrawTriangles(vertices, indices, whiteImg, op)
+	rrOp.AntiAlias = true
+	rrOp.FillRule = ebiten.NonZero
+	rrOp.ColorScaleMode = ebiten.ColorScaleModePremultipliedAlpha
+	screen.DrawTriangles(rrVertices, rrIndices, getWhitePixel(), rrOp)
 }
 
 // DrawRoundedRectStroke draws a rounded rectangle outline
@@ -490,28 +512,28 @@ func DrawRoundedRectStroke(screen *ebiten.Image, bounds Rect, radius int, stroke
 
 	path.Close()
 
-	vertices, indices := path.AppendVerticesAndIndicesForStroke(nil, nil, &vector.StrokeOptions{
-		Width:    strokeWidth,
-		LineJoin: vector.LineJoinRound,
-		LineCap:  vector.LineCapRound,
-	})
+	// Reuse backing arrays
+	rrStrokeVertices = rrStrokeVertices[:0]
+	rrStrokeIndices = rrStrokeIndices[:0]
+	rrStrokeOptions.Width = strokeWidth
+	rrStrokeVertices, rrStrokeIndices = path.AppendVerticesAndIndicesForStroke(rrStrokeVertices, rrStrokeIndices, rrStrokeOptions)
 
-	// Apply color to vertices
-	for i := range vertices {
-		vertices[i].ColorR = 1
-		vertices[i].ColorG = 1
-		vertices[i].ColorB = 1
-		vertices[i].ColorA = 1
+	// Tint vertices with the stroke color (white pixel × vertex color = desired color)
+	cr, cg, cb, ca := clr.RGBA()
+	rf := float32(cr) / 0xffff
+	gf := float32(cg) / 0xffff
+	bf := float32(cb) / 0xffff
+	af := float32(ca) / 0xffff
+	for i := range rrStrokeVertices {
+		rrStrokeVertices[i].ColorR = rf
+		rrStrokeVertices[i].ColorG = gf
+		rrStrokeVertices[i].ColorB = bf
+		rrStrokeVertices[i].ColorA = af
 	}
 
-	op := &ebiten.DrawTrianglesOptions{}
-	op.AntiAlias = true
-
-	// Create a 1x1 image with the stroke color
-	colorImg := ebiten.NewImage(1, 1)
-	colorImg.Fill(clr)
-
-	screen.DrawTriangles(vertices, indices, colorImg, op)
+	rrStrokeOp.AntiAlias = true
+	rrStrokeOp.ColorScaleMode = ebiten.ColorScaleModePremultipliedAlpha
+	screen.DrawTriangles(rrStrokeVertices, rrStrokeIndices, getWhitePixel(), rrStrokeOp)
 }
 
 // GetContentBounds returns the bounds minus padding and border

@@ -22,6 +22,14 @@ func PostMessage(sender, message string) {
 
 var MessageLog []string
 
+const maxMessageLog = 1000
+
 func AddMessage(x string) {
 	MessageLog = append(MessageLog, x)
+	if len(MessageLog) > maxMessageLog {
+		// Trim oldest messages, copy to new slice to release old backing array
+		trimmed := make([]string, maxMessageLog/2)
+		copy(trimmed, MessageLog[len(MessageLog)-maxMessageLog/2:])
+		MessageLog = trimmed
+	}
 }
