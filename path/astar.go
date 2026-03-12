@@ -63,11 +63,15 @@ func NewAStar(estimatedNodes int) *AStar {
 	}
 }
 
-// reset clears the pathfinder for a new search without deallocating
+// reset clears the pathfinder for a new search without deallocating.
+// If the map grew too large, replace it to avoid GC scanning oversized bucket arrays.
 func (a *AStar) reset() {
-	// Clear the map by deleting all keys (faster than creating new map)
-	for k := range a.nodeIndex {
-		delete(a.nodeIndex, k)
+	if len(a.nodeIndex) > cap(a.nodes) {
+		a.nodeIndex = make(map[int]int, cap(a.nodes))
+	} else {
+		for k := range a.nodeIndex {
+			delete(a.nodeIndex, k)
+		}
 	}
 	a.nodes = a.nodes[:0]
 	a.openSet = a.openSet[:0]
