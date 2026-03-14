@@ -7,16 +7,32 @@ const MessageEventType event.EventType = "MessageEvent"
 type MessageEvent struct {
 	Sender  string
 	Message string
+	Tag     string
 }
 
 func (e MessageEvent) GetType() event.EventType {
 	return MessageEventType
 }
 
+// SuppressedTags contains message tags that should be silently dropped.
+// Set a tag to true to suppress all messages with that matching tag.
+var SuppressedTags = map[string]bool{}
+
+// PostMessage posts an untagged message.
 func PostMessage(sender, message string) {
+	PostTaggedMessage("", sender, message)
+}
+
+// PostTaggedMessage posts a message with a category tag.
+// Messages whose tag is in SuppressedTags are silently dropped.
+func PostTaggedMessage(tag, sender, message string) {
+	if tag != "" && SuppressedTags[tag] {
+		return
+	}
 	event.GetQueuedInstance().QueueEvent(MessageEvent{
 		Sender:  sender,
 		Message: message,
+		Tag:     tag,
 	})
 }
 
