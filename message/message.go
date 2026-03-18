@@ -7,6 +7,7 @@ const MessageEventType event.EventType = "MessageEvent"
 type MessageEvent struct {
 	Sender  string
 	Message string
+	X, Y, Z int // Option location information
 	Tag     string
 }
 
@@ -26,6 +27,12 @@ func PostMessage(sender, message string) {
 // PostTaggedMessage posts a message with a category tag.
 // Messages whose tag is in SuppressedTags are silently dropped.
 func PostTaggedMessage(tag, sender, message string) {
+	PostLocatedTaggedMessage(tag, sender, message, 0, 0, 0)
+}
+
+// PostLocatedTaggedMessage posts a tagged message with a world location.
+// Listeners can use the location to filter messages by visibility.
+func PostLocatedTaggedMessage(tag, sender, message string, x, y, z int) {
 	if tag != "" && SuppressedTags[tag] {
 		return
 	}
@@ -33,6 +40,9 @@ func PostTaggedMessage(tag, sender, message string) {
 		Sender:  sender,
 		Message: message,
 		Tag:     tag,
+		X:       x,
+		Y:       y,
+		Z:       z,
 	})
 }
 
