@@ -8,10 +8,17 @@ import (
 	"github.com/mechanical-lich/mlge/text"
 )
 
+// ColoredLine is a single line of text with an optional color override.
+// A nil Color means use the widget's default text color.
+type ColoredLine struct {
+	Text  string
+	Color color.Color // nil = use default
+}
+
 // ScrollingTextArea is a multi-line text display with scrolling support
 type ScrollingTextArea struct {
 	*ElementBase
-	Lines        []string
+	Lines        []ColoredLine
 	ScrollOffset int
 	LineHeight   int
 	VisibleLines int
@@ -30,7 +37,7 @@ type ScrollingTextArea struct {
 func NewScrollingTextArea(id string, width, height int) *ScrollingTextArea {
 	sta := &ScrollingTextArea{
 		ElementBase:  NewElementBase(id),
-		Lines:        make([]string, 0),
+		Lines:        make([]ColoredLine, 0),
 		ScrollOffset: 0,
 		LineHeight:   18,
 		WrapWidth:    width - 20, // Account for padding and scrollbar
@@ -60,11 +67,15 @@ func (sta *ScrollingTextArea) GetType() string {
 
 // AddText appends text to the area, wrapping and scrolling to bottom
 func (sta *ScrollingTextArea) AddText(txt string) {
-	// Wrap the new text
-	wrapped := text.Wrap(txt, sta.WrapWidth, 15)
-	sta.Lines = append(sta.Lines, wrapped...)
+	sta.AddColoredText(txt, nil)
+}
 
-	// Auto-scroll to bottom
+// AddColoredText appends text with an optional color override.
+func (sta *ScrollingTextArea) AddColoredText(txt string, col color.Color) {
+	wrapped := text.Wrap(txt, sta.WrapWidth, 15)
+	for _, line := range wrapped {
+		sta.Lines = append(sta.Lines, ColoredLine{Text: line, Color: col})
+	}
 	maxOffset := len(sta.Lines) - sta.VisibleLines
 	if maxOffset < 0 {
 		maxOffset = 0
@@ -74,13 +85,14 @@ func (sta *ScrollingTextArea) AddText(txt string) {
 
 // SetText replaces all text in the area
 func (sta *ScrollingTextArea) SetText(txt string) {
-	sta.Lines = text.Wrap(txt, sta.WrapWidth, 15)
+	sta.Lines = sta.Lines[:0]
 	sta.ScrollOffset = 0
+	sta.AddText(txt)
 }
 
 // Clear removes all text
 func (sta *ScrollingTextArea) Clear() {
-	sta.Lines = make([]string, 0)
+	sta.Lines = sta.Lines[:0]
 	sta.ScrollOffset = 0
 }
 
@@ -240,9 +252,19 @@ func (sta *ScrollingTextArea) Draw(screen *ebiten.Image) {
 		textColor = colorToRGBA(theme.Colors.Text)
 	}
 
+	fontSize := 14.0
+	if style.FontSize != nil {
+		fontSize = float64(*style.FontSize)
+	}
+
 	for i := start; i < end; i++ {
 		lineY := contentBounds.Y + (i-start)*sta.LineHeight
-		text.Draw(screen, sta.Lines[i], 14.0, contentBounds.X, lineY, textColor)
+		line := sta.Lines[i]
+		lineColor := textColor
+		if line.Color != nil {
+			lineColor = colorToRGBA(line.Color)
+		}
+		text.Draw(screen, line.Text, fontSize, contentBounds.X, lineY, lineColor)
 	}
 
 	// Draw scrollbar if needed

@@ -114,6 +114,10 @@ Static text display with multiline support:
 ```go
 label := minui.NewLabel("status-label", "Health: 100")
 label.SetText("Health: 80")
+
+// Create with a specific color, or change color at runtime
+label := minui.NewLabelWithColor("status-label", "Health: 100", color.RGBA{0, 255, 0, 255})
+label.SetColor(color.RGBA{255, 0, 0, 255})
 ```
 
 ### TextInput
@@ -169,13 +173,67 @@ bar.SetValue(0.75) // 75%
 
 ### ScrollingTextArea
 
-Multi-line scrollable text display:
+Multi-line scrollable text display. Text is automatically word-wrapped. Scrolls to the bottom when new text is added, and supports mouse-wheel scrolling and a draggable scrollbar thumb.
 
 ```go
 textArea := minui.NewScrollingTextArea("log-area", 400, 200)
-textArea.AddLine("Player entered the dungeon")
-textArea.AddLine("A wild goblin appears!")
+textArea.AddText("Player entered the dungeon")
+textArea.AddText("A wild goblin appears!")
+
+// Per-line color override (nil = widget default)
+textArea.AddColoredText("You are badly wounded!", color.RGBA{255, 60, 60, 255})
+
+textArea.Clear()
 ```
+
+### RichText
+
+A list of independently styled text spans, each rendered as one line. Height is calculated automatically from content. Useful for HUD panels where different lines need different colors, sizes, or strikethrough.
+
+```go
+rt := minui.NewRichText("hover-panel", 200)
+rt.LineHeight = 14
+
+rt.AddSpan(minui.TextSpan{
+    Text:  "Goblin",
+    Color: color.RGBA{255, 200, 100, 255},
+    Size:  13,
+})
+rt.AddSpan(minui.TextSpan{
+    Text:   "HP: 4/10",
+    Color:  color.RGBA{200, 80, 80, 255},
+    Size:   11,
+    Indent: 8,
+})
+rt.AddSpan(minui.TextSpan{
+    Text:          "left arm",
+    Color:         color.RGBA{120, 80, 160, 255},
+    Size:          11,
+    Indent:        8,
+    Strikethrough: true,
+})
+
+rt.Clear()
+rt.SetPosition(x, y)
+rt.Draw(screen)
+```
+
+`RichText` does not scroll — wrap lines yourself before adding spans (see `text.Wrap`). It has no background or border; position it manually and call `Draw` directly (no parent required).
+
+### ImageWidget
+
+Displays an `*ebiten.Image` scaled to the widget's bounds:
+
+```go
+widget := minui.NewImageWidget("minimap", 150, 150)
+widget.SetPosition(x, y)
+
+// Update the image each frame
+widget.Image = generateMinimapImage()
+widget.Draw(screen)
+```
+
+`ImageWidget` has no parent requirement — call `Draw` directly. If `Image` is nil the widget draws nothing.
 
 ### TabPanel
 
@@ -183,8 +241,12 @@ Tabbed container:
 
 ```go
 tabPanel := minui.NewTabPanel("settings-tabs", 600, 400)
-tabPanel.AddTab("General", generalPanel)
-tabPanel.AddTab("Audio", audioPanel)
+tabPanel.AddTab("general", "General", generalPanel)
+tabPanel.AddTab("audio", "Audio", audioPanel)
+
+// Programmatically switch to a tab by ID
+tabPanel.SetActiveTab("audio")
+
 // Event type: "ui.tabpanel.change"
 ```
 

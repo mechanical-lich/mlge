@@ -27,6 +27,18 @@ func NewLabel(id, text string) *Label {
 	return label
 }
 
+// NewLabelWithColor creates a label with an explicit text color.
+func NewLabelWithColor(id, labelText string, col color.Color) *Label {
+	l := NewLabel(id, labelText)
+	l.SetColor(col)
+	return l
+}
+
+// SetColor sets the label's text color.
+func (l *Label) SetColor(col color.Color) {
+	l.style.ForegroundColor = &col
+}
+
 // GetType returns the element type
 func (l *Label) GetType() string {
 	return "Label"
