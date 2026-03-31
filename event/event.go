@@ -110,9 +110,13 @@ func (m *QueuedEventManager) HandleQueue() {
 	// We don't want to handle new events generated while handling these events or we'll get an endless loop.
 	c := len(m.eventQueue)
 	for len(m.eventQueue) > 0 && c > 0 {
-		m.SendEvent(m.eventQueue[0])
+		evt := m.eventQueue[0]
 		m.eventQueue = m.eventQueue[1:]
 		c--
+		if evt == nil {
+			continue
+		}
+		m.SendEvent(evt)
 	}
 }
 
