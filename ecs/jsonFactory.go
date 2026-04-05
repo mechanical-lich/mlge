@@ -30,19 +30,32 @@ func (f *JSONFactory) RegisterComponent(name string, constructor ComponentConstr
 	f.registry[name] = constructor
 }
 
-// LoadBlueprintsFromDir loads all JSON blueprint files from a directory.
+// LoadBlueprintsFromDir loads all JSON blueprint files from a directory,
+// recursing into subdirectories up to 3 levels deep.
 // Each file should contain a map of blueprint names to component definitions.
 func (f *JSONFactory) LoadBlueprintsFromDir(dir string) error {
+	return f.loadBlueprintsFromDirDepth(dir, 0)
+}
+
+func (f *JSONFactory) loadBlueprintsFromDirDepth(dir string, depth int) error {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return fmt.Errorf("failed to read blueprint dir %s: %w", dir, err)
 	}
 
 	for _, entry := range entries {
-		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
+		path := filepath.Join(dir, entry.Name())
+		if entry.IsDir() {
+			if depth < 3 {
+				if err := f.loadBlueprintsFromDirDepth(path, depth+1); err != nil {
+					return err
+				}
+			}
 			continue
 		}
-		path := filepath.Join(dir, entry.Name())
+		if filepath.Ext(entry.Name()) != ".json" {
+			continue
+		}
 		if err := f.LoadBlueprintsFromFile(path); err != nil {
 			return err
 		}
