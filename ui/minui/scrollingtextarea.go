@@ -24,6 +24,10 @@ type ScrollingTextArea struct {
 	VisibleLines int
 	WrapWidth    int
 
+	// CharWidth is the estimated pixel width of one character, used to convert
+	// WrapWidth (pixels) to a character count for text.Wrap. Defaults to 7.
+	CharWidth int
+
 	draggingThumb bool
 	dragOffsetY   int
 
@@ -41,6 +45,7 @@ func NewScrollingTextArea(id string, width, height int) *ScrollingTextArea {
 		ScrollOffset: 0,
 		LineHeight:   18,
 		WrapWidth:    width - 20, // Account for padding and scrollbar
+		CharWidth:    7,
 	}
 
 	sta.SetSize(width, height)
@@ -72,7 +77,12 @@ func (sta *ScrollingTextArea) AddText(txt string) {
 
 // AddColoredText appends text with an optional color override.
 func (sta *ScrollingTextArea) AddColoredText(txt string, col color.Color) {
-	wrapped := text.Wrap(txt, sta.WrapWidth, 15)
+	charWidth := sta.CharWidth
+	if charWidth <= 0 {
+		charWidth = 7
+	}
+	maxChars := sta.WrapWidth / charWidth
+	wrapped := text.Wrap(txt, maxChars, 15)
 	for _, line := range wrapped {
 		sta.Lines = append(sta.Lines, ColoredLine{Text: line, Color: col})
 	}
