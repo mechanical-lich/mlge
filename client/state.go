@@ -5,6 +5,12 @@ import (
 	"github.com/mechanical-lich/mlge/transport"
 )
 
+// ShaderPass is an optional interface a ClientState can implement to apply a
+// full-screen shader pass after its Draw call.
+type ShaderPass interface {
+	Shader() *ebiten.Shader
+}
+
 // ClientState is the presentation-layer equivalent of state.StateInterface.
 //
 // Differences from state.StateInterface:
@@ -30,7 +36,8 @@ type ClientState interface {
 
 // clientStateMachine is the client-side state stack.
 type clientStateMachine struct {
-	states []ClientState
+	states    []ClientState
+	offscreen *ebiten.Image
 }
 
 func (m *clientStateMachine) PushState(s ClientState) {
@@ -62,5 +69,21 @@ func (m *clientStateMachine) Draw(screen *ebiten.Image) {
 	if len(m.states) == 0 {
 		return
 	}
-	m.states[len(m.states)-1].Draw(screen)
+	top := m.states[len(m.states)-1]
+	sp, hasShader := top.(ShaderPass)
+	if !hasShader {
+		top.Draw(screen)
+		return
+	}
+
+	w, h := screen.Bounds().Dx(), screen.Bounds().Dy()
+	if m.offscreen == nil || m.offscreen.Bounds().Dx() != w || m.offscreen.Bounds().Dy() != h {
+		m.offscreen = ebiten.NewImage(w, h)
+	}
+	m.offscreen.Clear()
+	top.Draw(m.offscreen)
+
+	op := &ebiten.DrawRectShaderOptions{}
+	op.Images[0] = m.offscreen
+	screen.DrawRectShader(w, h, sp.Shader(), op)
 }
