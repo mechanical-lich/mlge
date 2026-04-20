@@ -238,9 +238,18 @@ func (sb *SelectBox) Draw(screen *ebiten.Image) {
 			Height: sb.listBox.bounds.Height,
 		}
 
-		// Draw listbox background and border with theme support
+		// Draw an opaque base first so the dropdown is never see-through,
+		// then let the theme/style paint over it if one is configured.
 		lbStyle := sb.listBox.GetComputedStyle()
-		DrawBackgroundWithTheme(screen, dropdownBounds, lbStyle, theme)
+		dropdownBg := color.RGBA{30, 32, 40, 255}
+		if theme != nil {
+			c := colorToRGBA(theme.Colors.Surface)
+			if c.A > 0 {
+				dropdownBg = c
+			}
+		}
+		DrawRect(screen, dropdownBounds, dropdownBg)
+		DrawBackgroundWithTheme(screen, dropdownBounds, style, theme)
 
 		// Draw listbox items
 		contentBounds := GetContentBounds(dropdownBounds, lbStyle)
