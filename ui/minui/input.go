@@ -224,8 +224,14 @@ func (ti *TextInput) Draw(screen *ebiten.Image) {
 	_, textH := text.Measure("M", fontSize)
 	textY := contentBounds.Y + int(math.Floor((float64(contentBounds.Height)-textH)/2.0))
 
-	// Draw the text starting at the content X and vertically centered
-	text.Draw(screen, displayText, fontSize, contentBounds.X, textY, textColor)
+	// Draw the text starting at the content X and vertically centered.
+	// Note: cursor positioning below depends on raw displayText offsets, so we
+	// only clip if the field has lost focus (no cursor to align).
+	if ti.focused {
+		text.Draw(screen, displayText, fontSize, contentBounds.X, textY, textColor)
+	} else {
+		text.DrawClipped(screen, displayText, fontSize, contentBounds.X, textY, contentBounds.Width, textColor)
+	}
 
 	// Draw cursor if focused
 	if ti.focused {

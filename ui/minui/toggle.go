@@ -7,7 +7,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/mechanical-lich/mlge/event"
-	"github.com/mechanical-lich/mlge/text"
 )
 
 // ToggleChangeEvent is fired when a toggle state changes
@@ -217,9 +216,13 @@ func (t *Toggle) Draw(screen *ebiten.Image) {
 			textColor = colorToRGBA(theme.Colors.Text)
 		}
 
+		if !t.enabled {
+			textColor = dimColor(textColor)
+		}
 		textX := switchX + switchWidth + 8
 		textY := contentBounds.Y + (contentBounds.Height-fontSize)/2
-		text.Draw(screen, t.Text, float64(fontSize), textX, textY, textColor)
+		maxW := contentBounds.X + contentBounds.Width - textX
+		DrawClippedWithTooltip(screen, t, t.Text, float64(fontSize), textX, textY, maxW, textColor)
 	}
 }
 

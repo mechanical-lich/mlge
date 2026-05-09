@@ -296,6 +296,23 @@ drawer := minui.NewDrawer("side-drawer", minui.DrawerLeft)
 drawer.AddChild(menuPanel)
 ```
 
+### ScrollPanel
+
+Vertical-scrolling generic container. Children may be any `Element`; the panel mouse-wheel scrolls when hovered, clips children to its bounds via `SubImage`, and draws a themed scrollbar on the right when content overflows.
+
+```go
+scroll := minui.NewScrollPanel("recipes")
+scroll.SetBounds(minui.Rect{X: 20, Y: 60, Width: 300, Height: 420})
+for i, name := range recipeNames {
+    mi := minui.NewMenuItem("r_"+name, name)
+    mi.SetBounds(minui.Rect{X: 0, Y: i * 22, Width: 300, Height: 22})
+    scroll.AddChild(mi)
+}
+modal.AddChild(scroll)
+```
+
+Children placed inside a `ScrollPanel` continue to report correct hit-test coordinates while scrolled. The mechanism: `ScrollPanel` exposes `GetScrollOffsetY() int`, and `ElementBase.GetAbsolutePosition` subtracts that offset when its parent satisfies the interface. Custom containers that introduce their own viewport offset can use the same hook.
+
 ### Tooltip
 
 ```go
@@ -341,3 +358,49 @@ The UI supports two rendering paths:
 
 - **Vector rendering** (default) — Draws widgets using filled rectangles, borders, and text
 - **Sprite rendering** — When `Theme.SpriteSheet` is set, draws widgets using 9-slice sprites from a sprite sheet for a pixel-art or custom visual style
+
+## Overlay layer
+
+Some widgets need to paint above everything else — open dropdowns, tooltips, context menus. Rather than juggling z-order or restructuring the element tree, defer the always-on-top portion of a widget's `Draw` to the overlay queue:
+
+```go
+func (w *MyWidget) Draw(screen *ebiten.Image) {
+    // ...draw the base widget inline...
+    if w.expanded {
+        minui.QueueOverlay(func(s *ebiten.Image) {
+            w.drawPopup(s)
+        })
+    }
+}
+```
+
+`GUI.Draw` flushes the overlay queue at the end of its main pass, so overlays land on top of everything (including modals). If you draw widgets manually outside `GUI.Draw`, call `minui.FlushOverlays(screen)` at the end of your draw routine instead — otherwise the overlay queue will never be drained and dropdowns will not appear.
+
+`SelectBox` uses this for its expanded list. Custom popups, autocompletes, and floating tooltips should follow the same pattern.
+
+## Overflow tooltips
+
+Most text-bearing widgets (`Button`, `IconButton`, `Label`, `MenuItem`, `Toggle`, …) render their labels through `DrawClippedWithTooltip(screen, owner, txt, size, x, y, maxW, color)` instead of raw text rendering. If `txt` exceeds `maxW`, it's drawn with a trailing ellipsis. If the user hovers the widget for ~½ second, a small floating tooltip near the cursor reveals the full string. State is keyed per-element and ages out automatically.
+
+Custom widgets that want the same behavior call:
+
+```go
+minui.DrawClippedWithTooltip(screen, w /* owner */, w.Text, fontSize, x, y, maxW, textColor)
+```
+
+Pure text helpers also exist in the `text` package:
+
+- `text.Measure(txt, size)` — measure a string
+- `text.Truncate(txt, size, maxW)` — return the longest prefix + ellipsis that fits
+- `text.DrawClipped(screen, txt, size, x, y, maxW, color)` — draw, truncating if needed (no tooltip behavior)
+
+## Disabled state
+
+Every interactive widget short-circuits in `Update` when `IsEnabled()` is false (no hover, no click). In `Draw`, text and icons render dimmed via the shared `dimColor` helper. Use `SetEnabled(false)` to grey out a widget without removing it.
+
+```go
+btn.SetEnabled(false)              // grey, non-interactive
+btn.SetEnabled(settlement.HasTech("metallurgy"))
+```
+
+Widgets with this behavior: `Button`, `IconButton`, `MenuItem`, `Toggle`, `RadioButton`. Containers don't disable their children — call `SetEnabled` on each child you want gated.

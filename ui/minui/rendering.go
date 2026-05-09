@@ -46,6 +46,12 @@ func colorToRGBA(c color.Color) color.RGBA {
 	}
 }
 
+// dimColor returns a darker version of c, used for disabled-state text/icons.
+func dimColor(c color.Color) color.RGBA {
+	rgba := colorToRGBA(c)
+	return color.RGBA{R: rgba.R / 2, G: rgba.G / 2, B: rgba.B / 2, A: rgba.A}
+}
+
 // ---- Sprite-based rendering functions ----
 
 // DrawSprite draws a sprite from a sprite sheet, scaled to fit the bounds

@@ -227,88 +227,89 @@ func (sb *SelectBox) Draw(screen *ebiten.Image) {
 	arrowY := absBounds.Y + (absBounds.Height/2 - 6)
 	text.Draw(screen, ">", 12.0, arrowX, arrowY, arrowColor)
 
-	// If expanded, draw the list box (floating) at absolute coordinates
+	// If expanded, defer the dropdown to the overlay pass so it always paints
+	// on top of any later-drawn siblings or modals.
 	if sb.expanded && sb.listBox != nil {
-		// Calculate where listbox should appear (directly below select)
-		absX, absY := sb.GetAbsolutePosition()
-		dropdownBounds := Rect{
-			X:      absX,
-			Y:      absY + sb.bounds.Height,
-			Width:  sb.bounds.Width,
-			Height: sb.listBox.bounds.Height,
+		QueueOverlay(func(s *ebiten.Image) { sb.drawDropdown(s, theme) })
+	}
+}
+
+func (sb *SelectBox) drawDropdown(screen *ebiten.Image, theme *Theme) {
+	style := sb.GetComputedStyle()
+	absX, absY := sb.GetAbsolutePosition()
+	dropdownBounds := Rect{
+		X:      absX,
+		Y:      absY + sb.bounds.Height,
+		Width:  sb.bounds.Width,
+		Height: sb.listBox.bounds.Height,
+	}
+
+	// Draw an opaque base first so the dropdown is never see-through,
+	// then let the theme/style paint over it if one is configured.
+	lbStyle := sb.listBox.GetComputedStyle()
+	dropdownBg := color.RGBA{30, 32, 40, 255}
+	if theme != nil {
+		c := colorToRGBA(theme.Colors.Surface)
+		if c.A > 0 {
+			dropdownBg = c
+		}
+	}
+	DrawRect(screen, dropdownBounds, dropdownBg)
+	DrawBackgroundWithTheme(screen, dropdownBounds, style, theme)
+
+	// Draw listbox items
+	contentBounds := GetContentBounds(dropdownBounds, lbStyle)
+	clipArea := CreateSubImage(screen, contentBounds)
+
+	startIndex := sb.listBox.scrollOffset / sb.listBox.itemHeight
+	visibleItems := contentBounds.Height / sb.listBox.itemHeight
+	endIndex := startIndex + visibleItems + 1
+	if endIndex > len(sb.listBox.Items) {
+		endIndex = len(sb.listBox.Items)
+	}
+
+	// Get colors from theme
+	highlightColor := color.RGBA{0, 100, 200, 255}
+	hoverColor := color.RGBA{70, 100, 150, 255}
+	if theme != nil {
+		highlightColor = colorToRGBA(theme.Colors.Primary)
+		hoverColor = colorToRGBA(theme.Colors.Surface)
+		hoverColor.R = min(hoverColor.R+20, 255)
+		hoverColor.G = min(hoverColor.G+20, 255)
+		hoverColor.B = min(hoverColor.B+20, 255)
+	}
+
+	for i := startIndex; i < endIndex; i++ {
+		itemY := contentBounds.Y + (i * sb.listBox.itemHeight) - sb.listBox.scrollOffset
+		itemBounds := Rect{
+			X:      contentBounds.X,
+			Y:      itemY,
+			Width:  contentBounds.Width,
+			Height: sb.listBox.itemHeight,
 		}
 
-		// Draw an opaque base first so the dropdown is never see-through,
-		// then let the theme/style paint over it if one is configured.
-		lbStyle := sb.listBox.GetComputedStyle()
-		dropdownBg := color.RGBA{30, 32, 40, 255}
+		if i == sb.listBox.SelectedIndex {
+			DrawRect(clipArea, itemBounds, highlightColor)
+		} else if i == sb.listBox.HoveredIndex {
+			DrawRect(clipArea, itemBounds, hoverColor)
+		}
+
+		itemTextColor := color.RGBA{255, 255, 255, 255}
 		if theme != nil {
-			c := colorToRGBA(theme.Colors.Surface)
-			if c.A > 0 {
-				dropdownBg = c
-			}
+			itemTextColor = colorToRGBA(theme.Colors.Text)
 		}
-		DrawRect(screen, dropdownBounds, dropdownBg)
-		DrawBackgroundWithTheme(screen, dropdownBounds, style, theme)
-
-		// Draw listbox items
-		contentBounds := GetContentBounds(dropdownBounds, lbStyle)
-		clipArea := CreateSubImage(screen, contentBounds)
-
-		startIndex := sb.listBox.scrollOffset / sb.listBox.itemHeight
-		visibleItems := contentBounds.Height / sb.listBox.itemHeight
-		endIndex := startIndex + visibleItems + 1
-		if endIndex > len(sb.listBox.Items) {
-			endIndex = len(sb.listBox.Items)
+		if i == sb.listBox.SelectedIndex {
+			itemTextColor = color.RGBA{255, 255, 255, 255}
 		}
 
-		// Get colors from theme
-		highlightColor := color.RGBA{0, 100, 200, 255}
-		hoverColor := color.RGBA{70, 100, 150, 255}
-		if theme != nil {
-			highlightColor = colorToRGBA(theme.Colors.Primary)
-			hoverColor = colorToRGBA(theme.Colors.Surface)
-			hoverColor.R = min(hoverColor.R+20, 255)
-			hoverColor.G = min(hoverColor.G+20, 255)
-			hoverColor.B = min(hoverColor.B+20, 255)
-		}
+		text.DrawClipped(clipArea, sb.listBox.Items[i], 14.0, itemBounds.X+4, itemBounds.Y+3, itemBounds.Width-8, itemTextColor)
+	}
 
-		for i := startIndex; i < endIndex; i++ {
-			itemY := contentBounds.Y + (i * sb.listBox.itemHeight) - sb.listBox.scrollOffset
-			itemBounds := Rect{
-				X:      contentBounds.X,
-				Y:      itemY,
-				Width:  contentBounds.Width,
-				Height: sb.listBox.itemHeight,
-			}
+	DrawBorderWithTheme(screen, dropdownBounds, lbStyle, theme)
 
-			// Draw selection highlight
-			if i == sb.listBox.SelectedIndex {
-				DrawRect(clipArea, itemBounds, highlightColor)
-			} else if i == sb.listBox.HoveredIndex {
-				DrawRect(clipArea, itemBounds, hoverColor)
-			}
-
-			// Draw item text with theme colors
-			itemTextColor := color.RGBA{255, 255, 255, 255}
-			if theme != nil {
-				itemTextColor = colorToRGBA(theme.Colors.Text)
-			}
-			if i == sb.listBox.SelectedIndex {
-				itemTextColor = color.RGBA{255, 255, 255, 255}
-			}
-
-			text.Draw(clipArea, sb.listBox.Items[i], 14.0, itemBounds.X+4, itemBounds.Y+3, itemTextColor)
-		}
-
-		// Draw border with theme support
-		DrawBorderWithTheme(screen, dropdownBounds, lbStyle, theme)
-
-		// Draw scrollbar if needed
-		totalHeight := len(sb.listBox.Items) * sb.listBox.itemHeight
-		if totalHeight > contentBounds.Height {
-			sb.drawScrollbar(screen, contentBounds, dropdownBounds, theme)
-		}
+	totalHeight := len(sb.listBox.Items) * sb.listBox.itemHeight
+	if totalHeight > contentBounds.Height {
+		sb.drawScrollbar(screen, contentBounds, dropdownBounds, theme)
 	}
 }
 

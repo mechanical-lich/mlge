@@ -449,7 +449,8 @@ func (tp *TabPanel) drawTabs(screen *ebiten.Image, absX, absY int, style *Style,
 			}
 
 			if tab.Text != "" {
-				text.Draw(screen, tab.Text, float64(fontSize), contentX, contentY, textColor)
+				maxW := absX + tabW - contentX - 4
+				text.DrawClipped(screen, tab.Text, float64(fontSize), contentX, contentY, maxW, textColor)
 			}
 
 			x += tabW + tp.TabSpacing

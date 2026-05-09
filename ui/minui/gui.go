@@ -143,6 +143,7 @@ func (g *GUI) Layout() {
 
 // Draw draws all elements
 func (g *GUI) Draw(screen *ebiten.Image) {
+	inGUIDrawPass = true
 	// Draw regular elements
 	for _, element := range g.elements {
 		element.Draw(screen)
@@ -152,6 +153,10 @@ func (g *GUI) Draw(screen *ebiten.Image) {
 	for _, modal := range g.modals {
 		modal.Draw(screen)
 	}
+
+	// Drain any overlays queued during the draw pass (e.g. open dropdowns)
+	flushOverlays(screen)
+	inGUIDrawPass = false
 }
 
 // FindElementByID finds an element by its ID

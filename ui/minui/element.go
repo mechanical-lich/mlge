@@ -276,6 +276,11 @@ func (e *ElementBase) GetAbsolutePosition() (int, int) {
 		offsetY += 30 // Title bar height
 	}
 
+	// Check if parent is a scroll panel - subtract scroll offset
+	if scroller, ok := e.parent.(interface{ GetScrollOffsetY() int }); ok {
+		offsetY -= scroller.GetScrollOffsetY()
+	}
+
 	return px + offsetX + e.bounds.X, py + offsetY + e.bounds.Y
 }
 

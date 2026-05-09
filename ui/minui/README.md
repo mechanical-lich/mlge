@@ -1,16 +1,6 @@
-# Min-UI - Minimal Vector-Based UI Library for MLGE
+# minui — Minimal Vector-Based UI for MLGE
 
-A lightweight, sprite-independent UI library for the MLGE game engine that uses vector graphics and CSS-like styling with inheritance.
-
-## Features
-
-- **Vector-Based Rendering**: No external sprite dependencies - all UI elements drawn with vector graphics
-- **CSS-Like Styling**: Familiar style properties (padding, margin, border, background, etc.)
-- **Style Inheritance**: Styles cascade from parent to child elements automatically
-- **Interactive Elements**: Buttons, inputs, checkboxes, lists with hover/focus/active states
-- **Modal Dialogs**: Draggable modal windows with title bars
-- **Flexible Layouts**: HBox, VBox containers with automatic child positioning
-- **Background Images**: Optional image backgrounds via resource system
+A lightweight, sprite-independent UI library for the MLGE game engine. Vector-rendered widgets, CSS-like styling with cascading inheritance, theme support, and a small set of opinionated conventions for hover/focus/disabled state and overflow handling.
 
 ## Quick Start
 
@@ -18,333 +8,214 @@ A lightweight, sprite-independent UI library for the MLGE game engine that uses 
 package main
 
 import (
-	"image/color"
-	"github.com/hajimehoshi/ebiten/v2"
-	minui "github.com/mechanical-lich/mlge/ui/min-ui"
+    "github.com/hajimehoshi/ebiten/v2"
+    minui "github.com/mechanical-lich/mlge/ui/minui"
 )
 
 func main() {
-	// Create GUI manager
-	gui := minui.NewGUI()
-	
-	// Create a button
-	button := minui.NewButton("myButton", "Click Me")
-	button.SetPosition(100, 100)
-	button.OnClick = func() {
-		println("Button clicked!")
-	}
-	
-	gui.AddElement(button)
-	
-	// In your game loop:
-	// gui.Update()
-	// gui.Layout()
-	// gui.Draw(screen)
+    gui := minui.NewGUIWithTheme(minui.NewDarkTheme())
+
+    btn := minui.NewButton("save", "Save Game")
+    btn.SetPosition(100, 100)
+    btn.OnClick = func() { /* ... */ }
+    gui.AddElement(btn)
+
+    // Game loop:
+    //   gui.Update()
+    //   gui.Layout()
+    //   gui.Draw(screen)
 }
 ```
 
 ## Core Concepts
 
-### Elements
+### Element interface
 
-All UI components implement the `Element` interface:
-- `Label` - Text display
-- `Button` - Clickable button
-- `TextInput` - Single-line text input
-- `Checkbox` - Toggle checkbox
-- `ListBox` - Scrollable list with selection
-- `Panel` - Generic container
-- `VBox` - Vertical layout container
-- `HBox` - Horizontal layout container
-- `Modal` - Draggable dialog window
+Every widget implements `Element`: `Update()`, `Layout()`, `Draw(screen)`, plus state queries (`IsVisible`, `IsEnabled`, `GetBounds`, `GetAbsolutePosition`, …). `ElementBase` provides the common implementation; widgets embed it.
 
-### Styling System
+### Lifecycle
 
-Styles use CSS-like properties and support inheritance:
+1. **Update** — handle input, advance hover/focus/scroll state. Skip if `!visible || !enabled`.
+2. **Layout** — compute bounds from style + children.
+3. **Draw** — render. Disabled widgets render dimmed; truncated text auto-registers an overflow tooltip (see below).
+
+GUI runs all three for you in order. If you draw widgets manually outside `GUI.Draw`, call `minui.FlushOverlays(screen)` at the end of your draw routine.
+
+### Styling
+
+CSS-like properties on each element, with cascading inheritance from the parent. Common pattern:
 
 ```go
-button := minui.NewButton("btn", "Submit")
+fontSize := 14
+borderRadius := 6
+padding := minui.NewEdgeInsets(8)
 
-// Customize style
-bgColor := color.Color(color.RGBA{100, 150, 255, 255})
-borderWidth := 2
-borderRadius := 8
-padding := minui.NewEdgeInsets(12)
-
-style := button.GetStyle()
-style.BackgroundColor = &bgColor
-style.BorderWidth = &borderWidth
+style := btn.GetStyle()
+style.FontSize = &fontSize
 style.BorderRadius = &borderRadius
 style.Padding = padding
 
-// Hover state
-hoverBg := color.Color(color.RGBA{120, 170, 255, 255})
-style.HoverStyle = &minui.Style{
-	BackgroundColor: &hoverBg,
-}
+style.HoverStyle = &minui.Style{ /* override fields */ }
 ```
 
-### Style Properties
+Property categories:
+- **Layout** — `Width`, `Height`, `Min/MaxWidth`, `Min/MaxHeight`, `Padding`, `Margin`
+- **Visual** — `BackgroundColor`, `BackgroundImage`, `BorderColor`, `BorderWidth`, `BorderRadius`, `ForegroundColor`, `Opacity`
+- **Typography** — `FontSize`, `FontBold`, `FontItalic`, `TextAlign`, `VertAlign`
+- **State styles** — `HoverStyle`, `ActiveStyle`, `DisabledStyle`, `FocusStyle`
 
-#### Layout
-- `Width`, `Height` - Element dimensions
-- `MinWidth`, `MinHeight`, `MaxWidth`, `MaxHeight` - Size constraints
-- `Padding` - Inner spacing (EdgeInsets)
-- `Margin` - Outer spacing (EdgeInsets)
+Use the helpers `NewEdgeInsets(n)`, `NewEdgeInsetsLR(v, h)`, `NewEdgeInsetsTRBL(t, r, b, l)` for padding/margin.
 
-#### Visual
-- `BackgroundColor` - Background color
-- `BackgroundImage` - Background image resource ID
-- `BorderColor` - Border color
-- `BorderWidth` - Border thickness
-- `BorderRadius` - Rounded corners
-- `ForegroundColor` - Text/content color
-- `Opacity` - Transparency (0.0 - 1.0)
+### Themes
 
-#### Typography
-- `FontSize` - Text size
-- `FontBold` - Bold text
-- `FontItalic` - Italic text
-- `TextAlign` - Horizontal alignment (Left, Center, Right)
-- `VertAlign` - Vertical alignment (Top, Middle, Bottom)
-
-#### States
-- `HoverStyle` - Applied when mouse hovers
-- `ActiveStyle` - Applied when pressed/active
-- `DisabledStyle` - Applied when disabled
-- `FocusStyle` - Applied when focused
-
-### Style Inheritance
-
-Styles automatically inherit from parent elements:
+A `Theme` carries the palette (Primary, Surface, Text, Border, Focus, …) and is propagated through the element tree. `NewDarkTheme()` returns a sensible default. Widgets prefer theme colors; per-element `Style` overrides win.
 
 ```go
-// Set panel style
-panel := minui.NewPanel("panel")
-fontSize := 16
-panel.GetStyle().FontSize = &fontSize
-
-// Children inherit font size
-label := minui.NewLabel("label", "Text")
-panel.AddChild(label) // Label will use 16pt font
-
-// Override in child
-childFontSize := 12
-label.GetStyle().FontSize = &childFontSize // Now uses 12pt
+gui := minui.NewGUIWithTheme(minui.NewDarkTheme())
 ```
 
-### EdgeInsets Helper
+## Widgets
 
-Create spacing with convenience functions:
+### Containers
+- `Panel` — generic container with optional layout direction
+- `VBox`, `HBox` — auto-stacking containers with `Spacing`
+- `Modal` — draggable, closeable dialog with title bar; add via `gui.AddModal`
+- `ScrollPanel` — vertical-scrolling container; mouse-wheel scrolling, themed scrollbar, content auto-clipped to bounds. Children may be any Element and report correct hit-test coordinates while scrolled.
+- `TabPanel` — tabbed container with top/left tab strips
+- `Drawer` — slide-out side panel
 
-```go
-// All sides equal
-padding := minui.NewEdgeInsets(10) // 10px all around
+### Text & input
+- `Label` — single- or multi-line text
+- `RichText` — labels with mixed colors/sizes/bold spans
+- `TextInput` — single-line input with cursor, selection, submit
+- `Checkbox` — boolean checkbox with label
+- `Toggle` — switch-style toggle
+- `RadioButton` / `RadioGroup` — exclusive selection
 
-// Vertical and horizontal
-padding := minui.NewEdgeInsetsLR(8, 16) // 8px top/bottom, 16px left/right
+### Buttons & menus
+- `Button` — basic clickable button
+- `IconButton` — icon + optional text in 4 layouts (left/right/top/bottom/icon-only)
+- `MenuItem`, `MenuHeader` — for sidebars and popup menus
+- `PopupMenu` — context/dropdown menu
 
-// Individual sides
-padding := minui.NewEdgeInsetsTRBL(4, 8, 12, 16) // top, right, bottom, left
-```
+### Lists & selection
+- `ListBox` — scrollable list of strings with hover/select
+- `SelectBox` — HTML-style dropdown; expanded list draws on the overlay layer (always on top)
+- `TreeView` — hierarchical tree
 
-## Layout Containers
+### Display & feedback
+- `ProgressBar` — horizontal progress with optional label
+- `ResourceBar` — multi-resource HUD bar (icon + numeric value rows)
+- `ScrollingTextArea` — auto-scrolling text log (e.g. message history)
+- `ImageWidget` — draws a static image or sprite
+- `Icon` — themed icon resource
+- `Tooltip` / `TooltipManager` — explicit hover tooltips for any element
 
-### Panel
+### Modals
+- `FileModal` — in-engine file browser with directory navigation
 
-Generic container with manual or automatic layout:
+## Conventions
 
-```go
-panel := minui.NewPanel("panel")
-panel.SetBounds(minui.Rect{X: 0, Y: 0, Width: 400, Height: 300})
+### Disabled state
 
-// Add children
-panel.AddChild(label)
-panel.AddChild(button)
-```
+Every interactive widget short-circuits in `Update` when `IsEnabled()` is false (no hover, no click). In `Draw`, text and icons render dimmed via the shared `dimColor` helper. Use `SetEnabled(false)` to grey-out without removing the element.
 
-### VBox (Vertical Box)
+### Text overflow
 
-Arranges children vertically:
+Most widgets render labels through `DrawClippedWithTooltip(screen, owner, txt, size, x, y, maxW, color)` instead of raw text rendering. If `txt`'s measured width exceeds `maxW`, it's drawn with a trailing ellipsis. If the user then hovers the widget for ~½ second, an overflow tooltip near the cursor reveals the full string. State is automatically per-element and ages out when the widget stops drawing.
 
-```go
-vbox := minui.NewVBox("vbox")
-vbox.AddChild(label1)
-vbox.AddChild(label2)
-vbox.AddChild(button)
-// Children stacked top to bottom
-```
+If you build a custom widget and want the same behavior, call `DrawClippedWithTooltip` from its `Draw` method, passing the widget itself as `owner`.
 
-### HBox (Horizontal Box)
+### Overlay layer (always-on-top draws)
 
-Arranges children horizontally:
+Some widgets need to paint above everything else (open dropdowns, tooltips, context menus). Rather than juggling z-order, call `minui.QueueOverlay(func(screen) { ... })` from inside your Draw — the closure runs after the GUI has finished its main pass. `GUI.Draw` flushes the queue automatically. If you draw widgets manually (without using `GUI.Draw`), call `minui.FlushOverlays(screen)` at the end of your draw routine instead.
 
-```go
-hbox := minui.NewHBox("hbox")
-hbox.AddChild(button1)
-hbox.AddChild(button2)
-// Children placed left to right
-```
+### Coordinate hit-testing
 
-## Interactive Elements
+`Element.GetAbsolutePosition()` walks up the parent chain accounting for content padding, modal title bars, and scroll panel offsets, so child widgets work correctly inside any container without per-widget plumbing. Custom containers that want to introduce their own offset (e.g. a viewport) can implement `GetScrollOffsetY() int`.
 
-### Button
-
-```go
-button := minui.NewButton("btn", "Click Me")
-button.OnClick = func() {
-	fmt.Println("Clicked!")
-}
-```
-
-### TextInput
+## Modal example
 
 ```go
-input := minui.NewTextInput("nameInput", "Enter name...")
-input.OnChange = func(text string) {
-	fmt.Println("Text:", text)
-}
-input.OnSubmit = func(text string) {
-	fmt.Println("Submitted:", text)
-}
-```
-
-### Checkbox
-
-```go
-checkbox := minui.NewCheckbox("agree", "I agree")
-checkbox.OnChange = func(checked bool) {
-	fmt.Println("Checked:", checked)
-}
-```
-
-### ListBox
-
-```go
-list := minui.NewListBox("items", []string{
-	"Item 1",
-	"Item 2",
-	"Item 3",
-})
-list.OnSelect = func(index int, item string) {
-	fmt.Println("Selected:", index, item)
-}
-```
-
-## Modal Dialogs
-
-```go
-modal := minui.NewModal("dialog", "Confirm Action", 400, 200)
+modal := minui.NewModal("confirm", "Confirm Action", 400, 200)
 modal.SetPosition(120, 100)
-
-// Add content
-message := minui.NewLabel("msg", "Are you sure?")
-message.SetBounds(minui.Rect{X: 20, Y: 20, Width: 360, Height: 30})
+modal.Closeable = true
 
 okBtn := minui.NewButton("ok", "OK")
 okBtn.SetBounds(minui.Rect{X: 150, Y: 140, Width: 80, Height: 32})
-okBtn.OnClick = func() {
-	modal.SetVisible(false)
-}
-
-modal.AddChild(message)
+okBtn.OnClick = func() { modal.SetVisible(false) }
 modal.AddChild(okBtn)
 
-// Add to GUI (modals appear above regular elements)
 gui.AddModal(modal)
+modal.SetVisible(true)
 ```
 
-## Background Images
-
-Use images from the resource system:
+## ScrollPanel example
 
 ```go
-// Load image first
-resource.LoadImageAsTexture("panel_bg", "assets/panel_background.png")
-
-// Apply to element
-bgImage := "panel_bg"
-panel.GetStyle().BackgroundImage = &bgImage
+scroll := minui.NewScrollPanel("recipes")
+scroll.SetBounds(minui.Rect{X: 20, Y: 60, Width: 300, Height: 420})
+for i, name := range recipeNames {
+    mi := minui.NewMenuItem("r_"+name, name)
+    mi.SetBounds(minui.Rect{X: 0, Y: i * 22, Width: 300, Height: 22})
+    scroll.AddChild(mi)
+}
+modal.AddChild(scroll)
 ```
 
-## Complete Example
-
-See `examples/min-ui-demo/main.go` for a complete file browser demo application.
+The panel reports its own scroll offset to children via the `GetScrollOffsetY` interface, so menu items inside it click correctly even after scrolling.
 
 ## Architecture
 
-### File Structure
-
 ```
-ui/min-ui/
-├── style.go          # Style system and inheritance
-├── element.go        # Element interface and base
-├── rendering.go      # Vector drawing utilities
-├── containers.go     # Panel, VBox, HBox
-├── label.go          # Label element
-├── button.go         # Button element
-├── input.go          # TextInput and Checkbox
-├── listbox.go        # ListBox element
-├── modal.go          # Modal dialog
-└── gui.go            # GUI manager
+ui/minui/
+├── element.go             # Element interface + ElementBase
+├── style.go               # Style struct, EdgeInsets, computed style
+├── theme.go               # Theme palette + dark default
+├── rendering.go           # Vector draw helpers, colorToRGBA, dimColor
+├── overlay.go             # Top-level overlay queue (QueueOverlay/FlushOverlays)
+├── overflowtooltip.go     # DrawClippedWithTooltip + state tracking
+├── gui.go                 # GUI manager (root container)
+│
+├── containers.go          # Panel, VBox, HBox
+├── modal.go               # Modal
+├── scrollpanel.go         # ScrollPanel
+├── tabpanel.go            # TabPanel
+├── drawer.go              # Drawer
+│
+├── label.go               # Label
+├── richtext.go            # RichText
+├── input.go               # TextInput + Checkbox
+├── toggle.go              # Toggle
+├── radio.go               # RadioButton + RadioGroup
+│
+├── button.go              # Button
+├── iconbutton.go          # IconButton
+├── menuitem.go            # MenuItem + MenuHeader
+├── popupmenu.go           # PopupMenu
+│
+├── listbox.go             # ListBox
+├── selectbox.go           # SelectBox
+├── treeview.go            # TreeView
+│
+├── progress.go            # ProgressBar
+├── resourcebar.go         # ResourceBar
+├── scrollingtextarea.go   # ScrollingTextArea
+├── image.go               # ImageWidget
+├── icon.go                # Icon
+│
+├── tooltip.go             # Tooltip
+├── tooltipmanager.go      # TooltipManager
+└── filemodal.go           # FileModal
 ```
 
-### Rendering Pipeline
+## Design principles
 
-1. **Update**: Handle input and state changes
-2. **Layout**: Calculate element positions and sizes
-3. **Draw**: Render elements with vector graphics
-
-```go
-func (g *Game) Update() error {
-	gui.Update()  // Process input
-	return nil
-}
-
-func (g *Game) Draw(screen *ebiten.Image) {
-	gui.Layout()  // Calculate layout
-	gui.Draw(screen)  // Render
-}
-```
-
-## Design Principles
-
-1. **No External Dependencies**: All rendering uses vector graphics
-2. **Style Inheritance**: Parent styles cascade to children
-3. **State Management**: Automatic hover/focus/active state handling
-4. **Flexible Sizing**: Support for fixed, min/max, and auto sizing
-5. **Event-Driven**: Callback-based interaction model
-
-## Comparison with ui/v2
-
-| Feature | ui/v2 | min-ui |
-|---------|-------|--------|
-| Rendering | Sprite-based | Vector-based |
-| Dependencies | Requires sprite sheets | No external assets |
-| Styling | Theme struct | CSS-like Style |
-| Inheritance | No | Yes |
-| Background Images | No | Yes (optional) |
-| Border Radius | Fixed | Configurable |
-| State Styles | Limited | Full (hover/focus/active/disabled) |
-
-## Performance Notes
-
-- Vector rendering is fast enough for typical UI needs
-- For very complex UIs, consider caching rendered elements
-- Modal overlays use semi-transparent overlays (may impact performance with many modals)
-
-## Future Enhancements
-
-- Dropdown menus
-- Tree views
-- Tab containers
-- Tooltip system
-- Drag and drop
-- Animation/transitions
-- Grid layout container
-- Scroll containers
-- Color picker
-- Slider control
+1. **No external sprite dependencies** — vector rendering only (themes can opt into sprite-backed buttons).
+2. **Cascading style** — parent styles inherit; per-element overrides win.
+3. **Predictable state** — visible/enabled/hovered/focused/active are first-class on every element.
+4. **Overflow is silent** — never let text spill outside its widget; reveal the full content on hover.
+5. **Z-order via overlays, not layering** — defer always-on-top draws to the overlay queue rather than restructuring the tree.
 
 ## License
 

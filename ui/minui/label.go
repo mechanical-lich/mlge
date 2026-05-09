@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/mechanical-lich/mlge/text"
 )
 
 // Label is a text display element
@@ -181,6 +180,6 @@ func (l *Label) Draw(screen *ebiten.Image) {
 			}
 		}
 
-		text.Draw(screen, line, float64(fontSize), lineX, lineY, textColor)
+		DrawClippedWithTooltip(screen, l, line, float64(fontSize), lineX, lineY, contentBounds.Width, textColor)
 	}
 }

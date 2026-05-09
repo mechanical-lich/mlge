@@ -50,7 +50,7 @@ func (rb *RadioButton) SetGroup(group *RadioGroup) {
 
 // Update handles radio button interaction
 func (rb *RadioButton) Update() {
-	if !rb.visible {
+	if !rb.visible || !rb.enabled {
 		return
 	}
 
@@ -225,9 +225,12 @@ func (rb *RadioButton) Draw(screen *ebiten.Image) {
 		}
 
 		// Position text to the right of the circle with some spacing
+		if !rb.enabled {
+			textColor = dimColor(textColor)
+		}
 		textX := absX + rb.bounds.Width + 5
 		textY := absY + (rb.bounds.Height-fontSize)/2
-		text.Draw(screen, rb.Label, float64(fontSize), textX, textY, textColor)
+		text.DrawClipped(screen, rb.Label, float64(fontSize), textX, textY, 0, textColor)
 	}
 }
 

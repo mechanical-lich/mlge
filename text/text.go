@@ -56,6 +56,46 @@ func Measure(txt string, size float64) (float64, float64) {
 	return text.Measure(txt, f, 4)
 }
 
+// Truncate returns txt shortened with an ellipsis so its rendered width fits maxW.
+// If txt already fits, it is returned unchanged. If even an ellipsis won't fit,
+// returns "".
+func Truncate(txt string, size float64, maxW int) string {
+	if maxW <= 0 || txt == "" {
+		return txt
+	}
+	w, _ := Measure(txt, size)
+	if int(w) <= maxW {
+		return txt
+	}
+	const ellipsis = "…"
+	ew, _ := Measure(ellipsis, size)
+	if int(ew) > maxW {
+		return ""
+	}
+	runes := []rune(txt)
+	lo, hi := 0, len(runes)
+	for lo < hi {
+		mid := (lo + hi + 1) / 2
+		candidate := string(runes[:mid]) + ellipsis
+		cw, _ := Measure(candidate, size)
+		if int(cw) <= maxW {
+			lo = mid
+		} else {
+			hi = mid - 1
+		}
+	}
+	return string(runes[:lo]) + ellipsis
+}
+
+// DrawClipped renders txt at (x,y), truncating with an ellipsis if the text would
+// exceed maxW pixels. maxW <= 0 disables clipping.
+func DrawClipped(dst *ebiten.Image, txt string, size float64, x, y int, maxW int, clr color.Color) {
+	if maxW > 0 {
+		txt = Truncate(txt, size, maxW)
+	}
+	Draw(dst, txt, size, x, y, clr)
+}
+
 // Wrap splits s into lines, each with at most maxChars characters.
 // It tries to break at spaces, but will break long words if needed.
 // Explicit '\n' in s will always start a new line.

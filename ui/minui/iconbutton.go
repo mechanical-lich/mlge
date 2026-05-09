@@ -6,7 +6,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/mechanical-lich/mlge/event"
-	"github.com/mechanical-lich/mlge/text"
 )
 
 // IconButton is a clickable button with an icon
@@ -292,6 +291,10 @@ func (b *IconButton) Draw(screen *ebiten.Image) {
 	} else if theme != nil {
 		textColor = colorToRGBA(theme.Colors.Text)
 	}
+	var finalTextColor color.Color = textColor
+	if !b.enabled {
+		finalTextColor = dimColor(textColor)
+	}
 
 	iconW := 0
 	iconH := 0
@@ -322,7 +325,7 @@ func (b *IconButton) Draw(screen *ebiten.Image) {
 				textX += iconW + b.IconSpacing
 			}
 			textY := contentBounds.Y + (contentBounds.Height-textH)/2
-			text.Draw(screen, b.Text, float64(fontSize), textX, textY, textColor)
+			DrawClippedWithTooltip(screen, b, b.Text, float64(fontSize), textX, textY, contentBounds.X+contentBounds.Width-textX, finalTextColor)
 		}
 
 	case IconRight:
@@ -335,7 +338,7 @@ func (b *IconButton) Draw(screen *ebiten.Image) {
 
 		if b.Text != "" {
 			textY := contentBounds.Y + (contentBounds.Height-textH)/2
-			text.Draw(screen, b.Text, float64(fontSize), startX, textY, textColor)
+			DrawClippedWithTooltip(screen, b, b.Text, float64(fontSize), startX, textY, contentBounds.X+contentBounds.Width-startX, finalTextColor)
 		}
 		if b.Icon != nil {
 			iconX := startX + textW
@@ -361,7 +364,7 @@ func (b *IconButton) Draw(screen *ebiten.Image) {
 		if b.Text != "" {
 			textX := contentBounds.X + (contentBounds.Width-textW)/2
 			textY := startY + iconH + b.IconSpacing
-			text.Draw(screen, b.Text, float64(fontSize), textX, textY, textColor)
+			DrawClippedWithTooltip(screen, b, b.Text, float64(fontSize), textX, textY, contentBounds.X+contentBounds.Width-textX, finalTextColor)
 		}
 
 	case IconBottom:
@@ -374,7 +377,7 @@ func (b *IconButton) Draw(screen *ebiten.Image) {
 
 		if b.Text != "" {
 			textX := contentBounds.X + (contentBounds.Width-textW)/2
-			text.Draw(screen, b.Text, float64(fontSize), textX, startY, textColor)
+			DrawClippedWithTooltip(screen, b, b.Text, float64(fontSize), textX, startY, contentBounds.X+contentBounds.Width-textX, finalTextColor)
 		}
 		if b.Icon != nil {
 			iconX := contentBounds.X + (contentBounds.Width-iconW)/2

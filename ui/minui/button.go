@@ -170,12 +170,21 @@ func (b *Button) Draw(screen *ebiten.Image) {
 		textColor = colorToRGBA(theme.Colors.Text)
 	}
 
-	// Center text in button
-	textWidth := len(b.Text) * fontSize * 6 / 10
+	// Dim text when disabled
+	if !b.enabled {
+		textColor = dimColor(textColor)
+	}
+
+	// Center text in button using actual measurement
+	mw, _ := text.Measure(b.Text, float64(fontSize))
+	textWidth := int(mw)
+	if textWidth > contentBounds.Width {
+		textWidth = contentBounds.Width
+	}
 	textX := contentBounds.X + (contentBounds.Width-textWidth)/2
 	textY := contentBounds.Y + (contentBounds.Height-fontSize)/2
 
-	text.Draw(screen, b.Text, float64(fontSize), textX, textY, textColor)
+	DrawClippedWithTooltip(screen, b, b.Text, float64(fontSize), textX, textY, contentBounds.Width, textColor)
 }
 
 // IsPressed returns if the button is currently pressed

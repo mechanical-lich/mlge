@@ -67,6 +67,11 @@ func (mi *MenuItem) Update() {
 	if !mi.IsVisible() {
 		return
 	}
+	if !mi.IsEnabled() {
+		mi.hovered = false
+		mi.clicked = false
+		return
+	}
 
 	mx, my := ebiten.CursorPosition()
 	absX, absY := mi.GetAbsolutePosition()
@@ -170,14 +175,17 @@ func (mi *MenuItem) Draw(screen *ebiten.Image) {
 
 	// Choose text color based on state
 	finalTextColor := textColor
-	if mi.selected {
+	if !mi.IsEnabled() {
+		finalTextColor = dimColor(textColor)
+	} else if mi.selected {
 		finalTextColor = selectedColor
 	} else if mi.hovered {
 		finalTextColor = hoverColor
 	}
 
-	// Draw text
-	text.Draw(screen, mi.Text, 14.0, absX+4, absY+4, finalTextColor)
+	// Draw text, clipped to bounds (leaving 4px left padding + 4px right margin)
+	maxTextW := bounds.Width - 8
+	DrawClippedWithTooltip(screen, mi, mi.Text, 14.0, absX+4, absY+4, maxTextW, finalTextColor)
 }
 
 // Layout does nothing for menu items
@@ -230,7 +238,8 @@ func (mh *MenuHeader) Draw(screen *ebiten.Image) {
 		textColor = theme.Colors.TextSecondary
 	}
 
-	text.Draw(screen, mh.Text, 14.0, absX+4, absY+2, textColor)
+	bounds := mh.GetBounds()
+	text.DrawClipped(screen, mh.Text, 14.0, absX+4, absY+2, bounds.Width-8, textColor)
 }
 
 // Layout does nothing for headers
