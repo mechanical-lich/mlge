@@ -103,6 +103,15 @@ func (g *GUI) RemoveModal(modal Element) {
 
 // Update updates all elements
 func (g *GUI) Update() {
+	// Recompute mouse-input claim each frame before any widget runs Update,
+	// so an expanded SelectBox blocks clicks on widgets it visually overlaps
+	// regardless of update order.
+	resetInputClaim()
+	scanInputClaims(g.modals)
+	if !IsInputClaimed() {
+		scanInputClaims(g.elements)
+	}
+
 	// Check if there are any visible modals
 	hasVisibleModal := false
 	for _, modal := range g.modals {

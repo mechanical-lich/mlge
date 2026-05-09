@@ -52,6 +52,9 @@ func (lb *ListBox) Update() {
 	if !lb.visible || !lb.enabled {
 		return
 	}
+	if cx, cy := ebiten.CursorPosition(); IsInputClaimedOutside(cx, cy) {
+		return
+	}
 
 	lb.UpdateHoverState()
 

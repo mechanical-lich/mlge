@@ -74,6 +74,11 @@ func (mi *MenuItem) Update() {
 	}
 
 	mx, my := ebiten.CursorPosition()
+	if IsInputClaimedOutside(mx, my) {
+		mi.hovered = false
+		mi.clicked = false
+		return
+	}
 	absX, absY := mi.GetAbsolutePosition()
 	bounds := mi.GetBounds()
 

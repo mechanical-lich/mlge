@@ -135,6 +135,11 @@ func (b *IconButton) Update() {
 	if !b.visible || !b.enabled {
 		return
 	}
+	mx, my := ebiten.CursorPosition()
+	if IsInputClaimedOutside(mx, my) {
+		b.pressed = false
+		return
+	}
 
 	b.UpdateHoverState()
 

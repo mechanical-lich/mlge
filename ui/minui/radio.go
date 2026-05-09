@@ -53,6 +53,9 @@ func (rb *RadioButton) Update() {
 	if !rb.visible || !rb.enabled {
 		return
 	}
+	if cx, cy := ebiten.CursorPosition(); IsInputClaimedOutside(cx, cy) {
+		return
+	}
 
 	rb.UpdateHoverState()
 
