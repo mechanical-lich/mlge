@@ -96,8 +96,15 @@ func (m *Modal) Update() {
 
 	mx, my := ebiten.CursorPosition()
 
+	closeBtnBounds := Rect{
+		X:      absX + m.bounds.Width - 28,
+		Y:      absY + 4,
+		Width:  24,
+		Height: 22,
+	}
+
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		if titleBarBounds.Contains(mx, my) {
+		if titleBarBounds.Contains(mx, my) && !(m.Closeable && closeBtnBounds.Contains(mx, my)) {
 			m.dragging = true
 			m.dragOffsetX = mx - m.bounds.X
 			m.dragOffsetY = my - m.bounds.Y
@@ -113,13 +120,6 @@ func (m *Modal) Update() {
 
 	// Handle close button
 	if m.Closeable {
-		closeBtnBounds := Rect{
-			X:      absX + m.bounds.Width - 28,
-			Y:      absY + 4,
-			Width:  24,
-			Height: 22,
-		}
-
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 			if closeBtnBounds.Contains(mx, my) {
 				if m.OnClose != nil {
@@ -131,6 +131,7 @@ func (m *Modal) Update() {
 					Modal:   m,
 				})
 				m.visible = false
+				m.dragging = false
 				return
 			}
 		}
