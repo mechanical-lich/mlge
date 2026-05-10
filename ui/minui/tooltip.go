@@ -2,6 +2,7 @@ package minui
 
 import (
 	"image/color"
+	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/mechanical-lich/mlge/text"
@@ -213,13 +214,17 @@ func (t *Tooltip) Layout() {
 		contentHeight += titleFontSize + 4
 	}
 
-	// Text
+	// Text (may be multi-line)
 	if t.Text != "" {
-		textWidth := len(t.Text) * (fontSize * 6 / 10)
-		if textWidth > contentWidth {
-			contentWidth = textWidth
+		lineHeight := fontSize + 4
+		lines := strings.Split(t.Text, "\n")
+		for _, line := range lines {
+			lineWidth := len(line) * (fontSize * 6 / 10)
+			if lineWidth > contentWidth {
+				contentWidth = lineWidth
+			}
 		}
-		contentHeight += fontSize
+		contentHeight += lineHeight * len(lines)
 	}
 
 	t.bounds.Width = contentWidth + paddingH
@@ -283,9 +288,13 @@ func (t *Tooltip) Draw(screen *ebiten.Image) {
 		y += titleFontSize + 4
 	}
 
-	// Draw text
+	// Draw text (multi-line)
 	if t.Text != "" {
-		text.Draw(screen, t.Text, float64(fontSize), x, y, textColor)
+		lineHeight := fontSize + 4
+		for _, line := range strings.Split(t.Text, "\n") {
+			text.Draw(screen, line, float64(fontSize), x, y, textColor)
+			y += lineHeight
+		}
 	}
 
 	// Draw border with theme support
