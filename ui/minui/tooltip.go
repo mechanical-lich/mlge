@@ -125,8 +125,8 @@ func (t *Tooltip) updatePosition() {
 		x = targetX + targetW + t.Offset
 		y = targetY + (targetH-t.bounds.Height)/2
 	case TooltipMouse:
-		x = targetX + 16
-		y = targetY + 16
+		x = targetX + t.Offset
+		y = targetY + 8
 	}
 
 	// Keep tooltip on screen

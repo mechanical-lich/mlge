@@ -6,16 +6,29 @@ import (
 
 // TooltipManager manages tooltips for multiple elements
 type TooltipManager struct {
-	tooltips      map[string]*Tooltip
-	activeTooltip *Tooltip
-	enabled       bool
+	tooltips        map[string]*Tooltip
+	activeTooltip   *Tooltip
+	enabled         bool
+	theme           *Theme
+	defaultPosition TooltipPosition
+	defaultOffset   int
 }
 
 // NewTooltipManager creates a new tooltip manager
 func NewTooltipManager() *TooltipManager {
 	return &TooltipManager{
-		tooltips: make(map[string]*Tooltip),
-		enabled:  true,
+		tooltips:        make(map[string]*Tooltip),
+		enabled:         true,
+		defaultPosition: TooltipBelow,
+		defaultOffset:   8,
+	}
+}
+
+// SetTheme sets the theme applied to all tooltips registered with this manager.
+func (tm *TooltipManager) SetTheme(theme *Theme) {
+	tm.theme = theme
+	for _, tt := range tm.tooltips {
+		tt.SetTheme(theme)
 	}
 }
 
@@ -24,6 +37,11 @@ func (tm *TooltipManager) Register(element Element, title, text string, icon *Ic
 	tooltip := NewTooltip(element.GetID() + "_tooltip")
 	tooltip.SetContent(title, text, icon)
 	tooltip.SetTarget(element)
+	tooltip.Position = tm.defaultPosition
+	tooltip.Offset = tm.defaultOffset
+	if tm.theme != nil {
+		tooltip.SetTheme(tm.theme)
+	}
 	tm.tooltips[element.GetID()] = tooltip
 	return tooltip
 }
@@ -78,10 +96,19 @@ func (tm *TooltipManager) SetGlobalDelay(frames int) {
 	}
 }
 
-// SetGlobalPosition sets the position for all managed tooltips
+// SetGlobalPosition sets the default position for newly registered tooltips and updates existing ones.
 func (tm *TooltipManager) SetGlobalPosition(position TooltipPosition) {
+	tm.defaultPosition = position
 	for _, tooltip := range tm.tooltips {
 		tooltip.Position = position
+	}
+}
+
+// SetGlobalOffset sets the default pixel offset for newly registered tooltips and updates existing ones.
+func (tm *TooltipManager) SetGlobalOffset(offset int) {
+	tm.defaultOffset = offset
+	for _, tooltip := range tm.tooltips {
+		tooltip.Offset = offset
 	}
 }
 

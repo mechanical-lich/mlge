@@ -16,9 +16,11 @@ type ListBox struct {
 	SelectedIndex int
 	HoveredIndex  int
 	OnSelect      func(index int, item string)
+	OnHover       func(index int) // called when hovered row changes; -1 means no row hovered
 	scrollOffset  int
 	itemHeight    int
 	visibleItems  int
+	prevHovered   int
 }
 
 // NewListBox creates a new list box
@@ -28,6 +30,7 @@ func NewListBox(id string, items []string) *ListBox {
 		Items:         items,
 		SelectedIndex: -1,
 		HoveredIndex:  -1,
+		prevHovered:   -1,
 		itemHeight:    20,
 	}
 
@@ -78,6 +81,11 @@ func (lb *ListBox) Update() {
 		if index >= 0 && index < len(lb.Items) {
 			lb.HoveredIndex = index
 		}
+	}
+
+	if lb.OnHover != nil && lb.HoveredIndex != lb.prevHovered {
+		lb.prevHovered = lb.HoveredIndex
+		lb.OnHover(lb.HoveredIndex)
 	}
 
 	// Handle click
@@ -286,6 +294,7 @@ func (lb *ListBox) SetItems(items []string) {
 	lb.Items = items
 	lb.SelectedIndex = -1
 	lb.HoveredIndex = -1
+	lb.prevHovered = -1
 	lb.scrollOffset = 0
 }
 
