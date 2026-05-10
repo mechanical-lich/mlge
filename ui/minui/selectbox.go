@@ -65,6 +65,10 @@ func (sb *SelectBox) Update() {
 	if !sb.visible || !sb.enabled {
 		return
 	}
+	if IsInputClaimedByOther(sb) {
+		sb.hovered = false
+		return
+	}
 
 	sb.UpdateHoverState()
 

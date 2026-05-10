@@ -320,7 +320,7 @@ func (cb *Checkbox) Update() {
 	if !cb.visible || !cb.enabled {
 		return
 	}
-	if cx, cy := ebiten.CursorPosition(); IsInputClaimedOutside(cx, cy) {
+	if IsInputClaimed() {
 		return
 	}
 

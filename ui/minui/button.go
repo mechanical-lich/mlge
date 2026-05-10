@@ -49,9 +49,9 @@ func (b *Button) Update() {
 	if !b.visible || !b.enabled {
 		return
 	}
-	mx, my := ebiten.CursorPosition()
-	if IsInputClaimedOutside(mx, my) {
+	if IsInputClaimed() {
 		b.pressed = false
+		b.SetHovered(false)
 		return
 	}
 

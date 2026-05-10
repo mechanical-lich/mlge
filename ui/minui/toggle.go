@@ -61,7 +61,7 @@ func (t *Toggle) Update() {
 	if !t.visible || !t.enabled {
 		return
 	}
-	if cx, cy := ebiten.CursorPosition(); IsInputClaimedOutside(cx, cy) {
+	if IsInputClaimed() {
 		return
 	}
 
