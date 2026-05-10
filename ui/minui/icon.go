@@ -18,6 +18,9 @@ type Icon struct {
 	Width, Height int
 	// Scale is the rendering scale (default 1.0)
 	Scale float64
+	// Tint is an optional RGBA color multiplier applied at draw time. Zero
+	// value (all zeros) is treated as "no tint".
+	Tint color.RGBA
 }
 
 // NewIcon creates a new icon definition
@@ -76,8 +79,25 @@ func (i *Icon) Draw(screen *ebiten.Image, x, y int) {
 		op.GeoM.Scale(i.Scale, i.Scale)
 	}
 	op.GeoM.Translate(float64(x), float64(y))
+	i.applyTint(op)
 
 	screen.DrawImage(img, op)
+}
+
+// applyTint multiplies the icon's tint into the given draw options. No-op when
+// the tint is the zero value.
+func (i *Icon) applyTint(op *ebiten.DrawImageOptions) {
+	if i.Tint == (color.RGBA{}) {
+		return
+	}
+	r := float32(i.Tint.R) / 255
+	g := float32(i.Tint.G) / 255
+	b := float32(i.Tint.B) / 255
+	a := float32(i.Tint.A) / 255
+	if i.Tint.A == 0 {
+		a = 1
+	}
+	op.ColorScale.Scale(r, g, b, a)
 }
 
 // DrawCentered draws the icon centered at the specified position
@@ -107,6 +127,7 @@ func (i *Icon) DrawWithOpacity(screen *ebiten.Image, x, y int, opacity float32) 
 		op.GeoM.Scale(i.Scale, i.Scale)
 	}
 	op.GeoM.Translate(float64(x), float64(y))
+	i.applyTint(op)
 	op.ColorScale.ScaleAlpha(opacity)
 
 	screen.DrawImage(img, op)
