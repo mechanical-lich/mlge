@@ -13,6 +13,7 @@ import (
 type ListBox struct {
 	*ElementBase
 	Items         []string
+	ItemColors    []color.Color // optional per-item text color; nil entry = use default
 	SelectedIndex int
 	HoveredIndex  int
 	OnSelect      func(index int, item string)
@@ -222,14 +223,16 @@ func (lb *ListBox) Draw(screen *ebiten.Image) {
 			DrawRect(clipArea, itemBounds, hoverColor)
 		}
 
-		// Draw item text with preference order: explicit style ForegroundColor -> theme Text -> default
+		// Draw item text with preference order: per-item color -> explicit style ForegroundColor -> theme Text -> default
 		textColor := color.RGBA{255, 255, 255, 255}
 		if style != nil && style.ForegroundColor != nil {
 			textColor = colorToRGBA(*style.ForegroundColor)
 		} else if theme != nil {
 			textColor = colorToRGBA(theme.Colors.Text)
 		}
-
+		if i < len(lb.ItemColors) && lb.ItemColors[i] != nil {
+			textColor = colorToRGBA(lb.ItemColors[i])
+		}
 		if i == lb.SelectedIndex {
 			// Selected items should have contrasting text
 			textColor = color.RGBA{255, 255, 255, 255}
@@ -289,9 +292,10 @@ func (lb *ListBox) drawScrollbar(screen *ebiten.Image, contentBounds Rect, absBo
 	DrawRoundedRect(screen, thumbBounds, 4, thumbColor)
 }
 
-// SetItems sets the list items
+// SetItems sets the list items and clears per-item colors.
 func (lb *ListBox) SetItems(items []string) {
 	lb.Items = items
+	lb.ItemColors = nil
 	lb.SelectedIndex = -1
 	lb.HoveredIndex = -1
 	lb.prevHovered = -1
