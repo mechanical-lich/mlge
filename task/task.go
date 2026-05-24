@@ -21,6 +21,9 @@ type Task struct {
 	InProgress      bool
 	Created         time.Time
 	ManuallyStopped bool
+	// Interruptible marks tasks that the NeedsSystem may preempt (e.g. when a
+	// colonist becomes too exhausted). Combat and sleep tasks leave this false.
+	Interruptible bool
 }
 
 // Mark a task as in progress
