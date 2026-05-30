@@ -196,38 +196,38 @@ func (t *Tooltip) Layout() {
 		paddingV = style.Padding.Top + style.Padding.Bottom
 	}
 
-	// Calculate content size
-	contentWidth := 0
-	contentHeight := 0
-
-	// Icon
+	// Calculate content size. Icon is drawn to the LEFT of the text block in
+	// Draw(), so the bounds need to fit icon + text side-by-side — not the
+	// max of the two. Otherwise long titles overflow the background.
+	iconWidth := 0
 	if t.Icon != nil {
-		contentWidth += t.Icon.ScaledWidth() + 8
+		iconWidth = t.Icon.ScaledWidth() + 8
 	}
 
-	// Title
+	textWidth := 0
+	contentHeight := 0
+
 	if t.Title != "" {
-		titleWidth := len(t.Title) * (titleFontSize * 6 / 10)
-		if titleWidth > contentWidth {
-			contentWidth = titleWidth
+		titleW := len(t.Title) * (titleFontSize * 6 / 10)
+		if titleW > textWidth {
+			textWidth = titleW
 		}
 		contentHeight += titleFontSize + 4
 	}
 
-	// Text (may be multi-line)
 	if t.Text != "" {
 		lineHeight := fontSize + 4
 		lines := strings.Split(t.Text, "\n")
 		for _, line := range lines {
-			lineWidth := len(line) * (fontSize * 6 / 10)
-			if lineWidth > contentWidth {
-				contentWidth = lineWidth
+			lineW := len(line) * (fontSize * 6 / 10)
+			if lineW > textWidth {
+				textWidth = lineW
 			}
 		}
 		contentHeight += lineHeight * len(lines)
 	}
 
-	t.bounds.Width = contentWidth + paddingH
+	t.bounds.Width = iconWidth + textWidth + paddingH
 	t.bounds.Height = contentHeight + paddingV
 }
 
