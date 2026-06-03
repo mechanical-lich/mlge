@@ -75,6 +75,37 @@ func (m *Modal) AddChild(child Element) {
 	}
 }
 
+// interactionResetter is the interface widgets implement so a Modal can wipe
+// stale press-tracking when it becomes visible. See Button.ResetInteraction.
+type interactionResetter interface {
+	ResetInteraction()
+}
+
+// resetInteractionTree walks the element subtree and resets press-tracking on
+// every descendant that implements interactionResetter. Called by Modal on
+// the hidden→visible transition so the click that opened the modal can't be
+// adopted by a button that lands under the cursor.
+func resetInteractionTree(e Element) {
+	if r, ok := e.(interactionResetter); ok {
+		r.ResetInteraction()
+	}
+	for _, c := range e.GetChildren() {
+		resetInteractionTree(c)
+	}
+}
+
+// SetVisible overrides ElementBase.SetVisible to clear descendant
+// press-tracking on the hidden→visible transition.
+func (m *Modal) SetVisible(visible bool) {
+	wasVisible := m.visible
+	m.visible = visible
+	if visible && !wasVisible {
+		for _, c := range m.children {
+			resetInteractionTree(c)
+		}
+	}
+}
+
 // Update updates the modal
 func (m *Modal) Update() {
 	if !m.visible {

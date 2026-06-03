@@ -17,6 +17,14 @@ type IconButton struct {
 	IconSpacing  int
 	OnClick      func()
 	pressed      bool
+	// armed — see Button.armed.
+	armed bool
+}
+
+// ResetInteraction — see Button.ResetInteraction.
+func (b *IconButton) ResetInteraction() {
+	b.pressed = false
+	b.armed = false
 }
 
 // NewIconButton creates a new button with an icon
@@ -133,6 +141,7 @@ func (b *IconButton) GetType() string {
 // Update handles button interaction
 func (b *IconButton) Update() {
 	if !b.visible || !b.enabled {
+		b.pressed = false
 		return
 	}
 	if IsInputClaimed() {
@@ -143,18 +152,20 @@ func (b *IconButton) Update() {
 
 	b.UpdateHoverState()
 
-	// Check for click
-	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+	if !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		b.armed = true
+	}
+
+	// See Button.Update for the armed rationale.
+	if b.armed && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		if b.hovered {
 			b.pressed = true
 		}
-	} else {
+	} else if !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		if b.pressed && b.hovered {
-			// Button was clicked
 			if b.OnClick != nil {
 				b.OnClick()
 			}
-			// Fire event
 			event.GetQueuedInstance().QueueEvent(IconButtonClickEvent{
 				ButtonID: b.GetID(),
 				Button:   b,

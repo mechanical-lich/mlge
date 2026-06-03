@@ -4,6 +4,7 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/mechanical-lich/mlge/text"
 )
@@ -17,6 +18,8 @@ type MenuItem struct {
 	hovered  bool
 	selected bool
 	clicked  bool // track click state to avoid repeat firing
+	// armed — see Button.armed.
+	armed bool
 
 	// Colors
 	TextColor       color.Color
@@ -62,9 +65,16 @@ func (mi *MenuItem) GetType() string {
 	return "MenuItem"
 }
 
+// ResetInteraction — see Button.ResetInteraction.
+func (mi *MenuItem) ResetInteraction() {
+	mi.clicked = false
+	mi.armed = false
+}
+
 // Update handles hover detection
 func (mi *MenuItem) Update() {
 	if !mi.IsVisible() {
+		mi.clicked = false
 		return
 	}
 	if !mi.IsEnabled() {
@@ -85,18 +95,20 @@ func (mi *MenuItem) Update() {
 	mi.hovered = mx >= absX && mx < absX+bounds.Width &&
 		my >= absY && my < absY+bounds.Height
 
-	// Only fire click on mouse button release (just pressed then released)
-	if mi.hovered && ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-		if !mi.clicked {
-			mi.clicked = true
+	if !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		mi.armed = true
+	}
+
+	// See Button.Update for the armed rationale — a freshly-shown menu item
+	// must not adopt a press that began on the frame it appeared.
+	if mi.armed && mi.hovered && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		mi.clicked = true
+	} else if !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		if mi.clicked && mi.hovered {
+			if mi.OnClick != nil {
+				mi.OnClick()
+			}
 		}
-	} else if mi.clicked && mi.hovered {
-		// Mouse was pressed and now released while still hovering
-		mi.clicked = false
-		if mi.OnClick != nil {
-			mi.OnClick()
-		}
-	} else {
 		mi.clicked = false
 	}
 }

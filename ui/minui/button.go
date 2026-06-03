@@ -15,6 +15,20 @@ type Button struct {
 	Text    string
 	OnClick func()
 	pressed bool
+	// armed gates whether a JustPressed edge counts. It flips true the first
+	// time this button observes the mouse NOT pressed while interactive, and
+	// is reset to false when a parent modal becomes visible (so a press that
+	// began before the button appeared can't be adopted). See ResetInteraction.
+	armed bool
+}
+
+// ResetInteraction clears press-tracking state. Modal calls this on every
+// descendant when it transitions from hidden to visible so that the click
+// that opened the modal can't be adopted by a button that lands under the
+// cursor.
+func (b *Button) ResetInteraction() {
+	b.pressed = false
+	b.armed = false
 }
 
 // NewButton creates a new button
@@ -47,6 +61,7 @@ func (b *Button) GetType() string {
 // Update updates the button state
 func (b *Button) Update() {
 	if !b.visible || !b.enabled {
+		b.pressed = false
 		return
 	}
 	if IsInputClaimed() {
@@ -57,18 +72,23 @@ func (b *Button) Update() {
 
 	b.UpdateHoverState()
 
-	// Check for click
-	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+	// Once we observe the mouse released while interactive, we know any
+	// future press is fresh and can be adopted. Until then (i.e. the mouse
+	// was already held when this button became interactive), refuse to
+	// adopt — that press wasn't aimed at us.
+	if !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		b.armed = true
+	}
+
+	if b.armed && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		if b.hovered {
 			b.pressed = true
 		}
-	} else {
+	} else if !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		if b.pressed && b.hovered {
-			// Button was clicked
 			if b.OnClick != nil {
 				b.OnClick()
 			}
-			// Fire event
 			event.GetQueuedInstance().QueueEvent(ButtonClickEvent{
 				ButtonID: b.GetID(),
 				Button:   b,
