@@ -71,6 +71,15 @@ func (ti *TextInput) Update() {
 		return
 	}
 
+	// Text may have been replaced externally (e.g. populated from a model) since
+	// the last update, leaving the cursor past the end. Clamp before any slicing.
+	if ti.cursorPos > len(ti.Text) {
+		ti.cursorPos = len(ti.Text)
+	}
+	if ti.cursorPos < 0 {
+		ti.cursorPos = 0
+	}
+
 	oldText := ti.Text
 	textChanged := false
 

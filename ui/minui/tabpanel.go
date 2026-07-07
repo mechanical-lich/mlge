@@ -1,12 +1,9 @@
 package minui
 
 import (
-	"image/color"
-
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/mechanical-lich/mlge/event"
-	"github.com/mechanical-lich/mlge/text"
 )
 
 // TabPosition defines where tabs are placed
@@ -171,13 +168,8 @@ func (tp *TabPanel) Update() {
 	tp.UpdateHoverState()
 
 	mx, my := ebiten.CursorPosition()
-	absX, absY := tp.GetAbsolutePosition()
-
-	// Find hovered tab
-	tp.hoveredTabID = ""
-	if tp.hovered {
-		tp.hoveredTabID = tp.getTabAtPosition(mx-absX, my-absY)
-	}
+	items := tp.tabItems()
+	tp.hoveredTabID = tabStripHitTest(tp.stripRegion(), tp.TabPosition, items, tp.tabStyle(), mx, my)
 
 	// Handle click
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && tp.hoveredTabID != "" {
@@ -192,86 +184,33 @@ func (tp *TabPanel) Update() {
 	}
 }
 
-func (tp *TabPanel) getTabAtPosition(relX, relY int) string {
+// tabItems adapts the panel's tabs to the shared strip renderer's TabItem.
+func (tp *TabPanel) tabItems() []TabItem {
+	items := make([]TabItem, len(tp.Tabs))
+	for i, t := range tp.Tabs {
+		items[i] = TabItem{ID: t.ID, Label: t.Text, Icon: t.Icon, Enabled: true}
+	}
+	return items
+}
+
+// stripRegion is the absolute rect occupied by the tab strip on its edge.
+func (tp *TabPanel) stripRegion() Rect {
+	absX, absY := tp.GetAbsolutePosition()
 	switch tp.TabPosition {
-	case TabsTop:
-		if relY > tp.TabHeight {
-			return ""
-		}
-		x := 0
-		for _, tab := range tp.Tabs {
-			tabW := tp.calculateTabWidth(tab)
-			if relX >= x && relX < x+tabW {
-				return tab.ID
-			}
-			x += tabW + tp.TabSpacing
-		}
 	case TabsBottom:
-		if relY < tp.bounds.Height-tp.TabHeight {
-			return ""
-		}
-		x := 0
-		for _, tab := range tp.Tabs {
-			tabW := tp.calculateTabWidth(tab)
-			if relX >= x && relX < x+tabW {
-				return tab.ID
-			}
-			x += tabW + tp.TabSpacing
-		}
+		return Rect{X: absX, Y: absY + tp.bounds.Height - tp.TabHeight, Width: tp.bounds.Width, Height: tp.TabHeight}
 	case TabsLeft:
-		if relX > tp.TabHeight {
-			return ""
-		}
-		y := 0
-		for _, tab := range tp.Tabs {
-			tabH := tp.calculateTabHeight(tab)
-			if relY >= y && relY < y+tabH {
-				return tab.ID
-			}
-			y += tabH + tp.TabSpacing
-		}
+		return Rect{X: absX, Y: absY, Width: tp.TabHeight, Height: tp.bounds.Height}
 	case TabsRight:
-		if relX < tp.bounds.Width-tp.TabHeight {
-			return ""
-		}
-		y := 0
-		for _, tab := range tp.Tabs {
-			tabH := tp.calculateTabHeight(tab)
-			if relY >= y && relY < y+tabH {
-				return tab.ID
-			}
-			y += tabH + tp.TabSpacing
-		}
+		return Rect{X: absX + tp.bounds.Width - tp.TabHeight, Y: absY, Width: tp.TabHeight, Height: tp.bounds.Height}
+	default: // TabsTop
+		return Rect{X: absX, Y: absY, Width: tp.bounds.Width, Height: tp.TabHeight}
 	}
-	return ""
 }
 
-func (tp *TabPanel) calculateTabWidth(tab *Tab) int {
-	width := 16 // Base padding
-	if tab.Icon != nil {
-		width += tab.Icon.ScaledWidth()
-		if tab.Text != "" {
-			width += tp.IconSpacing
-		}
-	}
-	if tab.Text != "" {
-		width += len(tab.Text) * 8
-	}
-	return width
-}
-
-func (tp *TabPanel) calculateTabHeight(tab *Tab) int {
-	height := 8 // Base padding
-	if tab.Icon != nil {
-		height += tab.Icon.ScaledHeight()
-		if tab.Text != "" {
-			height += tp.IconSpacing
-		}
-	}
-	if tab.Text != "" {
-		height += 14
-	}
-	return max(height, tp.TabHeight)
+// tabStyle returns the notebook style for this panel's strip.
+func (tp *TabPanel) tabStyle() TabStripStyle {
+	return DefaultTabStripStyle()
 }
 
 // Layout calculates dimensions
@@ -377,8 +316,8 @@ func (tp *TabPanel) Draw(screen *ebiten.Image) {
 	// Draw background with theme support
 	DrawBackgroundWithTheme(screen, absBounds, style, theme)
 
-	// Draw tabs
-	tp.drawTabs(screen, absX, absY, style, theme)
+	// Draw the tab strip via the shared notebook renderer.
+	drawTabStrip(screen, tp.stripRegion(), tp.TabPosition, tp.tabItems(), tp.ActiveTabID, tp.hoveredTabID, tp.tabStyle())
 
 	// Draw content area border with theme support
 	contentBounds := tp.getContentBounds()
@@ -391,103 +330,6 @@ func (tp *TabPanel) Draw(screen *ebiten.Image) {
 	for _, tab := range tp.Tabs {
 		if tab.Content != nil && tab.ID == tp.ActiveTabID {
 			tab.Content.Draw(screen)
-		}
-	}
-}
-
-func (tp *TabPanel) drawTabs(screen *ebiten.Image, absX, absY int, style *Style, theme *Theme) {
-	fontSize := 14
-	if style.FontSize != nil {
-		fontSize = *style.FontSize
-	}
-
-	// Get text color from style, then theme, then default
-	textColor := color.RGBA{255, 255, 255, 255}
-	if style.ForegroundColor != nil {
-		textColor = colorToRGBA(*style.ForegroundColor)
-	} else if theme != nil {
-		textColor = colorToRGBA(theme.Colors.Text)
-	}
-
-	// Get tab colors from theme
-	activeBg := color.RGBA{70, 70, 90, 255}
-	hoverBg := color.RGBA{60, 60, 75, 255}
-	inactiveBg := color.RGBA{40, 40, 50, 255}
-	if theme != nil {
-		activeBg = colorToRGBA(theme.Colors.Primary)
-		hoverBg = colorToRGBA(theme.Colors.Surface)
-		hoverBg.R = min(hoverBg.R+10, 255)
-		hoverBg.G = min(hoverBg.G+10, 255)
-		hoverBg.B = min(hoverBg.B+10, 255)
-		inactiveBg = colorToRGBA(theme.Colors.Surface)
-	}
-
-	switch tp.TabPosition {
-	case TabsTop:
-		x := absX
-		for _, tab := range tp.Tabs {
-			tabW := tp.calculateTabWidth(tab)
-			tabBounds := Rect{X: x, Y: absY, Width: tabW, Height: tp.TabHeight}
-
-			// Draw tab background
-			bgColor := inactiveBg
-			if tab.ID == tp.ActiveTabID {
-				bgColor = activeBg
-			} else if tab.ID == tp.hoveredTabID {
-				bgColor = hoverBg
-			}
-			DrawRect(screen, tabBounds, bgColor)
-
-			// Draw tab content
-			contentX := x + 8
-			contentY := absY + (tp.TabHeight-fontSize)/2
-
-			if tab.Icon != nil {
-				iconY := absY + (tp.TabHeight-tab.Icon.ScaledHeight())/2
-				tab.Icon.Draw(screen, contentX, iconY)
-				contentX += tab.Icon.ScaledWidth() + tp.IconSpacing
-			}
-
-			if tab.Text != "" {
-				maxW := absX + tabW - contentX - 4
-				text.DrawClipped(screen, tab.Text, float64(fontSize), contentX, contentY, maxW, textColor)
-			}
-
-			x += tabW + tp.TabSpacing
-		}
-
-	case TabsLeft:
-		y := absY
-		for _, tab := range tp.Tabs {
-			tabH := tp.calculateTabHeight(tab)
-			tabBounds := Rect{X: absX, Y: y, Width: tp.TabHeight, Height: tabH}
-
-			// Draw tab background
-			bgColor := inactiveBg
-			if tab.ID == tp.ActiveTabID {
-				bgColor = activeBg
-			} else if tab.ID == tp.hoveredTabID {
-				bgColor = hoverBg
-			}
-			DrawRect(screen, tabBounds, bgColor)
-
-			// Draw tab content (centered, icon above text)
-			if tab.Icon != nil {
-				iconX := absX + (tp.TabHeight-tab.Icon.ScaledWidth())/2
-				iconY := y + 4
-				if tab.Text == "" {
-					iconY = y + (tabH-tab.Icon.ScaledHeight())/2
-				}
-				tab.Icon.Draw(screen, iconX, iconY)
-			}
-
-			if tab.Text != "" {
-				textX := absX + (tp.TabHeight-len(tab.Text)*fontSize*6/10)/2
-				textY := y + tabH - fontSize - 4
-				text.Draw(screen, tab.Text, float64(fontSize-2), textX, textY, textColor)
-			}
-
-			y += tabH + tp.TabSpacing
 		}
 	}
 }
