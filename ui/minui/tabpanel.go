@@ -208,9 +208,15 @@ func (tp *TabPanel) stripRegion() Rect {
 	}
 }
 
-// tabStyle returns the notebook style for this panel's strip.
+// tabStyle returns the notebook style for this panel's strip, tinting the active
+// tab to the content surface so it merges into the panel below.
 func (tp *TabPanel) tabStyle() TabStripStyle {
-	return DefaultTabStripStyle()
+	s := DefaultTabStripStyle()
+	if theme := tp.GetTheme(); theme != nil {
+		s.ActiveFill = colorToRGBA(theme.Colors.Surface)
+		s.InactiveFill = colorToRGBA(theme.Colors.Background)
+	}
+	return s
 }
 
 // Layout calculates dimensions
@@ -305,22 +311,17 @@ func (tp *TabPanel) Draw(screen *ebiten.Image) {
 
 	style := tp.GetComputedStyle()
 	theme := tp.GetTheme()
-	absX, absY := tp.GetAbsolutePosition()
-	absBounds := Rect{
-		X:      absX,
-		Y:      absY,
-		Width:  tp.bounds.Width,
-		Height: tp.bounds.Height,
-	}
+	contentBounds := tp.getContentBounds()
 
-	// Draw background with theme support
-	DrawBackgroundWithTheme(screen, absBounds, style, theme)
+	// Fill only the content area — the strip row stays clear so there's no
+	// leftover panel background beside the last tab (the panel starts under the
+	// tabs).
+	DrawBackgroundWithTheme(screen, contentBounds, style, theme)
 
 	// Draw the tab strip via the shared notebook renderer.
 	drawTabStrip(screen, tp.stripRegion(), tp.TabPosition, tp.tabItems(), tp.ActiveTabID, tp.hoveredTabID, tp.tabStyle())
 
 	// Draw content area border with theme support
-	contentBounds := tp.getContentBounds()
 	contentStyle := &Style{}
 	borderWidth := 1
 	contentStyle.BorderWidth = &borderWidth
