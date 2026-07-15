@@ -276,8 +276,16 @@ func (rg *RadioGroup) AddChild(el Element) {
 	el.SetParent(rg)
 }
 
-// Select selects a specific radio button and deselects all others
+// Select selects a specific radio button and deselects all others, emitting a
+// RadioGroupChangeEvent as if the user clicked it.
 func (rg *RadioGroup) Select(button *RadioButton) {
+	rg.selectButton(button, true)
+}
+
+// selectButton selects a button and always fires the OnSelectionChange callback.
+// It emits the RadioGroupChangeEvent only when notify is true — the click path
+// and Select/SelectByID do; the quiet setter does not.
+func (rg *RadioGroup) selectButton(button *RadioButton, notify bool) {
 	// Deselect all buttons (iterate children)
 	for _, child := range rg.children {
 		if btn, ok := child.(*RadioButton); ok {
@@ -294,21 +302,32 @@ func (rg *RadioGroup) Select(button *RadioButton) {
 		rg.OnSelectionChange(button.GetID(), button)
 	}
 
-	// Fire event
-	event.GetQueuedInstance().QueueEvent(RadioGroupChangeEvent{
-		RadioGroupID:   rg.GetID(),
-		RadioGroup:     rg,
-		SelectedID:     button.GetID(),
-		SelectedButton: button,
-	})
+	if notify {
+		event.GetQueuedInstance().QueueEvent(RadioGroupChangeEvent{
+			RadioGroupID:   rg.GetID(),
+			RadioGroup:     rg,
+			SelectedID:     button.GetID(),
+			SelectedButton: button,
+		})
+	}
 }
 
-// SelectByID selects a radio button by its ID
+// SelectByID selects a radio button by its ID, emitting a RadioGroupChangeEvent.
 func (rg *RadioGroup) SelectByID(id string) {
+	rg.selectByID(id, true)
+}
+
+// SelectByIDQuiet selects by ID programmatically WITHOUT emitting a
+// RadioGroupChangeEvent (see SelectByIndexQuiet on SelectBox for the rationale).
+func (rg *RadioGroup) SelectByIDQuiet(id string) {
+	rg.selectByID(id, false)
+}
+
+func (rg *RadioGroup) selectByID(id string, notify bool) {
 	for _, child := range rg.children {
 		if btn, ok := child.(*RadioButton); ok {
 			if btn.GetID() == id {
-				rg.Select(btn)
+				rg.selectButton(btn, notify)
 				return
 			}
 		}

@@ -116,8 +116,24 @@ func (tp *TabPanel) AddIconOnlyTab(id string, icon *Icon, content Element) *Tab 
 	return tp.AddIconTab(id, "", icon, content)
 }
 
-// SetActiveTab changes the active tab
+// SetActiveTab changes the active tab, emitting a TabChangeEvent as if the user
+// clicked it.
 func (tp *TabPanel) SetActiveTab(id string) {
+	tp.setActiveTab(id, true)
+}
+
+// SetActiveTabQuiet changes the active tab programmatically WITHOUT emitting a
+// TabChangeEvent. Use it when restoring or defaulting the tab so listeners that
+// treat the event as a user action (e.g. audio feedback) aren't triggered by
+// setup. The OnTabChange callback still fires so app state stays in sync.
+func (tp *TabPanel) SetActiveTabQuiet(id string) {
+	tp.setActiveTab(id, false)
+}
+
+// setActiveTab switches tabs and always fires the OnTabChange callback. It emits
+// the TabChangeEvent only when notify is true — the click path and SetActiveTab
+// do; the quiet setter does not.
+func (tp *TabPanel) setActiveTab(id string, notify bool) {
 	if tp.ActiveTabID == id {
 		return
 	}
@@ -132,16 +148,22 @@ func (tp *TabPanel) SetActiveTab(id string) {
 		}
 	}
 
+	if notify {
+		playInteraction(EventTypeTabChange, tp.GetID()) // immediate feedback, before the handler
+	}
+
 	if tp.OnTabChange != nil {
 		tp.OnTabChange(id)
 	}
 
-	event.GetQueuedInstance().QueueEvent(TabChangeEvent{
-		TabPanelID: tp.GetID(),
-		TabPanel:   tp,
-		OldTabID:   oldTabID,
-		NewTabID:   id,
-	})
+	if notify {
+		event.GetQueuedInstance().QueueEvent(TabChangeEvent{
+			TabPanelID: tp.GetID(),
+			TabPanel:   tp,
+			OldTabID:   oldTabID,
+			NewTabID:   id,
+		})
+	}
 }
 
 // GetActiveTab returns the currently active tab

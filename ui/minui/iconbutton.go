@@ -163,6 +163,7 @@ func (b *IconButton) Update() {
 		}
 	} else if !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		if b.pressed && b.hovered {
+			playInteraction(EventTypeIconButtonClick, b.GetID()) // immediate feedback, before the handler
 			if b.OnClick != nil {
 				b.OnClick()
 			}

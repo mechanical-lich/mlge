@@ -212,6 +212,7 @@ func (pm *PopupMenu) Update() {
 				item := pm.Items[pm.HoveredIndex]
 				if !item.Disabled && item.SubMenu == nil {
 					pm.SelectedIndex = pm.HoveredIndex
+					playInteraction(EventTypePopupMenuSelect, pm.GetID()) // immediate feedback, before the handler
 					if pm.OnSelect != nil {
 						pm.OnSelect(item)
 					}

@@ -86,6 +86,7 @@ func (b *Button) Update() {
 		}
 	} else if !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		if b.pressed && b.hovered {
+			playInteraction(EventTypeButtonClick, b.GetID()) // immediate feedback, before the handler
 			if b.OnClick != nil {
 				b.OnClick()
 			}

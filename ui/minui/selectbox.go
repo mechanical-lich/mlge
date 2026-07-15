@@ -46,7 +46,7 @@ func NewSelectBox(id string, items []string) *SelectBox {
 	lb.itemHeight = sb.itemHeight
 	lb.SetSize(sb.bounds.Width, sb.itemHeight*5) // default visible items: 5
 	lb.OnSelect = func(idx int, item string) {
-		sb.setSelectedIndex(idx)
+		sb.setSelectedIndex(idx, true) // user click → notify
 		// Collapse dropdown after selecting
 		sb.expanded = false
 	}
@@ -104,7 +104,7 @@ func (sb *SelectBox) Update() {
 		// Handle click on dropdown item
 		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 			if sb.listBox.HoveredIndex != -1 {
-				sb.setSelectedIndex(sb.listBox.HoveredIndex)
+				sb.setSelectedIndex(sb.listBox.HoveredIndex, true) // user click → notify
 				sb.expanded = false
 				return
 			}
@@ -359,13 +359,25 @@ func (sb *SelectBox) drawScrollbar(screen *ebiten.Image, contentBounds Rect, dro
 	DrawRoundedRect(screen, thumbBounds, 4, thumbColor)
 }
 
-// SelectByIndex selects a specified index programmatically
+// SelectByIndex selects a specified index programmatically, emitting a
+// SelectBoxChangeEvent as if chosen by the user.
 func (sb *SelectBox) SelectByIndex(index int) {
-	sb.setSelectedIndex(index)
+	sb.setSelectedIndex(index, true)
 }
 
-// setSelectedIndex sets index and notifies listeners
-func (sb *SelectBox) setSelectedIndex(index int) {
+// SelectByIndexQuiet selects programmatically WITHOUT emitting a
+// SelectBoxChangeEvent. Use it when repopulating or setting a default so
+// listeners that treat the event as a user action (e.g. audio feedback) aren't
+// triggered by setup. The OnSelect callback still fires so app state stays in
+// sync.
+func (sb *SelectBox) SelectByIndexQuiet(index int) {
+	sb.setSelectedIndex(index, false)
+}
+
+// setSelectedIndex sets index and always fires the OnSelect callback. It emits
+// the SelectBoxChangeEvent only when notify is true — the click path and the
+// public SelectByIndex do; programmatic/quiet setters do not.
+func (sb *SelectBox) setSelectedIndex(index int, notify bool) {
 	if index < 0 || index >= len(sb.Items) {
 		sb.SelectedIndex = -1
 		return
@@ -374,16 +386,20 @@ func (sb *SelectBox) setSelectedIndex(index int) {
 	if sb.listBox != nil {
 		sb.listBox.SelectedIndex = index
 	}
+	if notify {
+		playInteraction(EventTypeSelectBoxChange, sb.GetID()) // immediate feedback, before the handler
+	}
 	if sb.OnSelect != nil {
 		sb.OnSelect(index, sb.Items[index])
 	}
-	// Queue event
-	event.GetQueuedInstance().QueueEvent(SelectBoxChangeEvent{
-		SelectBoxID:   sb.GetID(),
-		SelectBox:     sb,
-		SelectedIndex: sb.SelectedIndex,
-		SelectedItem:  sb.Items[sb.SelectedIndex],
-	})
+	if notify {
+		event.GetQueuedInstance().QueueEvent(SelectBoxChangeEvent{
+			SelectBoxID:   sb.GetID(),
+			SelectBox:     sb,
+			SelectedIndex: sb.SelectedIndex,
+			SelectedItem:  sb.Items[sb.SelectedIndex],
+		})
+	}
 }
 
 // SetItems sets available options

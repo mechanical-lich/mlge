@@ -93,6 +93,7 @@ func (lb *ListBox) Update() {
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		if lb.HoveredIndex >= 0 && lb.HoveredIndex < len(lb.Items) {
 			lb.SelectedIndex = lb.HoveredIndex
+			playInteraction(EventTypeListBoxSelect, lb.GetID()) // immediate feedback, before the handler
 			if lb.OnSelect != nil && lb.SelectedIndex >= 0 && lb.SelectedIndex < len(lb.Items) {
 				lb.OnSelect(lb.SelectedIndex, lb.Items[lb.SelectedIndex])
 			}

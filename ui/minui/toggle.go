@@ -80,6 +80,7 @@ func (t *Toggle) Update() {
 		mx, my := ebiten.CursorPosition()
 		if absBounds.Contains(mx, my) {
 			t.On = !t.On
+			playInteraction(EventTypeToggleChange, t.GetID()) // immediate feedback, before the handler
 			if t.OnChange != nil {
 				t.OnChange(t.On)
 			}

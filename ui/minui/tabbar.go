@@ -5,6 +5,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/mechanical-lich/mlge/event"
 	"github.com/mechanical-lich/mlge/text"
 )
 
@@ -256,10 +257,18 @@ func (tb *TabBar) Update() {
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) && tb.hoveredID != "" {
 		for _, t := range tb.Tabs {
 			if t.ID == tb.hoveredID && t.Enabled && t.ID != tb.ActiveID {
+				oldID := tb.ActiveID
 				tb.ActiveID = t.ID
+				playInteraction(EventTypeTabBarChange, tb.GetID()) // immediate feedback, before the handler
 				if tb.OnChange != nil {
 					tb.OnChange(t.ID)
 				}
+				event.GetQueuedInstance().QueueEvent(TabBarChangeEvent{
+					TabBarID: tb.GetID(),
+					TabBar:   tb,
+					OldTabID: oldID,
+					NewTabID: t.ID,
+				})
 				break
 			}
 		}

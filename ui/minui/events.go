@@ -23,6 +23,7 @@ const (
 	EventTypeTreeViewSelect    event.EventType = "ui.treeview.select"
 	EventTypeTreeViewToggle    event.EventType = "ui.treeview.toggle"
 	EventTypeTabChange         event.EventType = "ui.tabpanel.change"
+	EventTypeTabBarChange      event.EventType = "ui.tabbar.change"
 	EventTypePopupMenuSelect   event.EventType = "ui.popupmenu.select"
 )
 
@@ -156,4 +157,18 @@ type RadioGroupChangeEvent struct {
 
 func (e RadioGroupChangeEvent) GetType() event.EventType {
 	return EventTypeRadioGroupChange
+}
+
+// TabBarChangeEvent is fired when the user clicks a TabBar tab and the active
+// tab actually changes. Unlike TabPanel, it is NOT fired by the programmatic
+// SetActive, so listeners (e.g. audio feedback) only react to real clicks.
+type TabBarChangeEvent struct {
+	TabBarID string
+	TabBar   *TabBar
+	OldTabID string
+	NewTabID string
+}
+
+func (e TabBarChangeEvent) GetType() event.EventType {
+	return EventTypeTabBarChange
 }
