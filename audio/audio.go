@@ -7,6 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/hajimehoshi/ebiten/v2/audio/mp3"
 	"github.com/hajimehoshi/ebiten/v2/audio/vorbis"
+	"github.com/hajimehoshi/ebiten/v2/audio/wav"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
@@ -29,6 +30,7 @@ const sampleRate = 32000
 const (
 	TypeOgg MusicType = iota
 	TypeMP3
+	TypeWav
 )
 
 func (t MusicType) String() string {
@@ -37,6 +39,8 @@ func (t MusicType) String() string {
 		return "Ogg"
 	case TypeMP3:
 		return "MP3"
+	case TypeWav:
+		return "Wav"
 	default:
 		return "unsupported"
 	}
@@ -65,6 +69,12 @@ func LoadAudioFromFile(path string, musicType MusicType) (*AudioResource, error)
 	case TypeMP3:
 		var err error
 		s, err = mp3.DecodeWithSampleRate(sampleRate, fileStream)
+		if err != nil {
+			return nil, err
+		}
+	case TypeWav:
+		var err error
+		s, err = wav.DecodeWithSampleRate(sampleRate, fileStream)
 		if err != nil {
 			return nil, err
 		}

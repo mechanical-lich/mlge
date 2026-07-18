@@ -58,8 +58,10 @@ func MusicTypeFromExt(path string) (MusicType, error) {
 		return TypeOgg, nil
 	case ".mp3":
 		return TypeMP3, nil
+	case ".wav":
+		return TypeWav, nil
 	default:
-		return 0, fmt.Errorf("audio: unsupported extension %q (want .ogg or .mp3)", filepath.Ext(path))
+		return 0, fmt.Errorf("audio: unsupported extension %q (want .ogg, .mp3 or .wav)", filepath.Ext(path))
 	}
 }
 
